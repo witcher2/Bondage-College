@@ -23,7 +23,7 @@ function SpeechGarble(C, CD) {
 	// Total gags always returns mmmmm
 	if (C.Effect.indexOf("GagTotal") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafTotal") >= 0))) {
 		console.log("total gag");
-		NS = GarbleTotal(C, CD, Par)
+		NS = GarbleTotal(C, CD, Par);
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
 		return NS;
@@ -32,20 +32,7 @@ function SpeechGarble(C, CD) {
 	// Heavy garble - Almost no letter stays the same
 	if (C.Effect.indexOf("GagHeavy") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafHeavy") >= 0))) {
 		console.log("heavy gag");
-		for (var L = 0; L < CD.length; L++) {
-			var H = CD.charAt(L).toLowerCase();
-			if (H == "(") Par = true;
-			if (!Par) {
-				if (H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "y" || H == "t") NS = NS + "e";
-				if (H == "c" || H == "q" || H == "x") NS = NS + "k";
-				if (H == "j" || H == "k" || H == "l" || H == "r" || H == "w") NS = NS + "a";
-				if (H == "s" || H == "z" || H == "h") NS = NS + "h";
-				if (H == "b" || H == "p" || H == "v") NS = NS + "f";
-				if (H == "d" || H == "f" || H == "g" || H == "n" || H == "m") NS = NS + "m";
-				if (H == " " || H == "." || H == "?" || H == "!" || H == "~") NS = NS + H;
-			} else NS = NS + CD.charAt(L);
-			if (H == ")") Par = false;
-		}
+		NS = GarbleHeavy(C, CD, Par);
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
 		return NS;
@@ -121,6 +108,37 @@ function GarbleTotal(C, message, skipLetter) {
 		else {
 			if (H == " " || H == "." || H == "?" || H == "!" || H == "~") newString += H;
 			else newString += "m";
+		}
+
+		if (H == ")") skipLetter = false;
+	}
+	newString = SpeechStutter(C, newString);
+	newString = SpeechBabyTalk(C, newString);
+	return newString;
+}
+
+function GarbleHeavy(C, message, skipLetter) {
+	/*
+	Heavily garbles anything you say, changes most letters.
+	:Param Object C: Object containing info about the player.
+	:Param string message: The message that is to be heavily garbled.
+	:Param Boolean skipLetter: Boolean indicating whether letters
+	to be skipped.
+	*/
+	var newString = "";
+	for (var L = 0; L < message.length; L++) {
+		var H = message.charAt(L).toLowerCase();
+
+		if (H == "(") skipLetter = true;
+		if (skipLetter) newString += message.charAt(L);
+		else {
+			if (H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "y" || H == "t") newString += "e";
+			if (H == "c" || H == "q" || H == "x") newString += "k";
+			if (H == "j" || H == "k" || H == "l" || H == "r" || H == "w") newString += "a";
+			if (H == "s" || H == "z" || H == "h") newString += "h";
+			if (H == "b" || H == "p" || H == "v") newString += "f";
+			if (H == "d" || H == "f" || H == "g" || H == "n" || H == "m") newString += "m";
+			if (H == " " || H == "." || H == "?" || H == "!" || H == "~") newString += H;
 		}
 
 		if (H == ")") skipLetter = false;
