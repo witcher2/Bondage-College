@@ -104,8 +104,16 @@ function SpeechGarble(C, CD) {
 }
 
 function GarbleTotal(C, message, skipLetter) {
+	/*
+	Changes anything you say to 'mmmm', leaving
+	anyone unable to understand you.
+	:Param Object C: Object containing info about the player.
+	:Param string message: The message that is to be completely garbled.
+	:Param Boolean skipLetter: Boolean indicating whether letters
+	to be skipped.
+	*/
 	var newString = "";
-	for (var L = 0; L < message.length; L++){
+	for (var L = 0; L < message.length; L++) {
 		var H = message.charAt(L).toLowerCase();
 
 		if (H == "(") skipLetter = true;
