@@ -11,6 +11,7 @@ function SpeechGarble(C, CD) {
 	Anything between parentheses stays untouched.
 	:Param Object C: An object containing information about the player.
 	:Param string CD: The message that the player wants to send.
+	:Return string: The garbled sentence.
 	*/
 
 	// Variables to build the new string and check if we are in a parentheses
@@ -18,12 +19,17 @@ function SpeechGarble(C, CD) {
 	var Par = false;
 	if (CD == null) CD = "";
 
-	var test = "";
-
 	// Total gags always returns mmmmm
 	if (C.Effect.indexOf("GagTotal") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafTotal") >= 0))) {
 		console.log("total gag");
-		NS = GarbleTotal(C, CD, Par);
+		// NS = GarbleTotal(C, CD, Par);
+		for (var L = 0; L < CD.length; L++) {
+			var H = CD.charAt(L).toLowerCase();
+			if (H == "(") Par = true;
+			if (Par) NS += CD.charAt(L);
+			else NS += Garble(H, "total");
+			if (H == ")") Par = false;
+		}
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
 		return NS;
@@ -32,7 +38,13 @@ function SpeechGarble(C, CD) {
 	// Heavy garble - Almost no letter stays the same
 	if (C.Effect.indexOf("GagHeavy") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafHeavy") >= 0))) {
 		console.log("heavy gag");
-		NS = GarbleHeavy(C, CD, Par);
+		for (var L = 0; L < CD.length; L++) {
+			var H = CD.charAt(L).toLowerCase();
+			if (H == "(") Par = true;
+			if (Par) NS += CD.charAt(L);
+			else NS += Garble(H, "heavy");
+			if (H == ")") Par = false;
+		}
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
 		return NS;
@@ -44,16 +56,8 @@ function SpeechGarble(C, CD) {
 		for (var L = 0; L < CD.length; L++) {
 			var H = CD.charAt(L).toLowerCase();
 			if (H == "(") Par = true;
-			if (!Par) {
-				if (H == "v" || H == "b" || H == "c" || H == "t") NS = NS + "e";
-				if (H == "q" || H == "k" || H == "x") NS = NS + "k";
-				if (H == "w" || H == "y" || H == "j" || H == "l" || H == "r") NS = NS + "a";
-				if (H == "s" || H == "z") NS = NS + "h";
-				if (H == "d" || H == "f") NS = NS + "m";
-				if (H == "p") NS = NS + "f";
-				if (H == "g") NS = NS + "n";
-				if (H == " " || H == "!" || H == "?" || H == "." || H == "~" || H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "m" || H == "n" || H == "h") NS = NS + H;
-			} else NS = NS + CD.charAt(L);
+			if (!Par) NS += Garble(H, "normal");
+			else NS += CD.charAt(L);
 			if (H == ")") Par = false;
 		}
 		NS = SpeechStutter(C, NS);
@@ -67,15 +71,8 @@ function SpeechGarble(C, CD) {
 		for (var L = 0; L < CD.length; L++) {
 			var H = CD.charAt(L).toLowerCase();
 			if (H == "(") Par = true;
-			if (!Par) {
-				if (H == "c" || H == "t") NS = NS + "e";
-				if (H == "q" || H == "k" || H == "x") NS = NS + "k";
-				if (H == "j" || H == "l" || H == "r") NS = NS + "a";
-				if (H == "s") NS = NS + "z";
-				if (H == "z") NS = NS + "s";
-				if (H == "d" || H == "f" || H == "m" || H == "g") NS = NS + "m";
-				if (H == "b" || H == "h" || H == "n" || H == "v" || H == "w" || H == "p" || H == " " || H == "'" || H == "?" || H == "!" || H == "." || H == "," || H == "~" || H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "y") NS = NS + H;
-			} else NS = NS + CD.charAt(L);
+			if (!Par) NS += Garble(H, "light");
+			else NS += CD.charAt(L);
 			if (H == ")") Par = false;
 		}
 		NS = SpeechStutter(C, NS);
@@ -90,62 +87,45 @@ function SpeechGarble(C, CD) {
 
 }
 
-function GarbleTotal(C, message, skipLetter) {
+function Garble(H, weight) {
 	/*
-	Changes anything you say to 'mmmm', leaving
-	anyone unable to understand you.
-	:Param Object C: Object containing info about the player.
-	:Param string message: The message that is to be completely garbled.
-	:Param Boolean skipLetter: Boolean indicating whether letters
-	to be skipped.
+	Replaces the letters with a different one, garbling what you are saying.
+	:Param string H: A letter of a word you are trying to say.
+	:Param string weight: An indicator indicating how badly to garble.
+	:Returns string: The different letter.
 	*/
-	var newString = "";
-	for (var L = 0; L < message.length; L++) {
-		var H = message.charAt(L).toLowerCase();
-
-		if (H == "(") skipLetter = true;
-		if (skipLetter) newString += message.charAt(L);
-		else {
-			if (H == " " || H == "." || H == "?" || H == "!" || H == "~") newString += H;
-			else newString += "m";
-		}
-
-		if (H == ")") skipLetter = false;
+	if (weight === "total") {
+		if (H == " " || H == "." || H == "?" || H == "!" || H == "~") return H;
+		else return "m";
 	}
-	newString = SpeechStutter(C, newString);
-	newString = SpeechBabyTalk(C, newString);
-	return newString;
-}
-
-function GarbleHeavy(C, message, skipLetter) {
-	/*
-	Heavily garbles anything you say, changes most letters.
-	:Param Object C: Object containing info about the player.
-	:Param string message: The message that is to be heavily garbled.
-	:Param Boolean skipLetter: Boolean indicating whether letters
-	to be skipped.
-	*/
-	var newString = "";
-	for (var L = 0; L < message.length; L++) {
-		var H = message.charAt(L).toLowerCase();
-
-		if (H == "(") skipLetter = true;
-		if (skipLetter) newString += message.charAt(L);
-		else {
-			if (H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "y" || H == "t") newString += "e";
-			if (H == "c" || H == "q" || H == "x") newString += "k";
-			if (H == "j" || H == "k" || H == "l" || H == "r" || H == "w") newString += "a";
-			if (H == "s" || H == "z" || H == "h") newString += "h";
-			if (H == "b" || H == "p" || H == "v") newString += "f";
-			if (H == "d" || H == "f" || H == "g" || H == "n" || H == "m") newString += "m";
-			if (H == " " || H == "." || H == "?" || H == "!" || H == "~") newString += H;
-		}
-
-		if (H == ")") skipLetter = false;
+	else if (weight === "heavy") {
+		if (H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "y" || H == "t") return "e";
+		if (H == "c" || H == "q" || H == "x") return "k";
+		if (H == "j" || H == "k" || H == "l" || H == "r" || H == "w") return "a";
+		if (H == "s" || H == "z" || H == "h") return "h";
+		if (H == "b" || H == "p" || H == "v") return "f";
+		if (H == "d" || H == "f" || H == "g" || H == "n" || H == "m") return "m";
+		if (H == " " || H == "." || H == "?" || H == "!" || H == "~") return H;
 	}
-	newString = SpeechStutter(C, newString);
-	newString = SpeechBabyTalk(C, newString);
-	return newString;
+	else if (weight === "normal") {
+		if (H == "v" || H == "b" || H == "c" || H == "t") return "e";
+		if (H == "q" || H == "k" || H == "x") return "k";
+		if (H == "w" || H == "y" || H == "j" || H == "l" || H == "r") return "a";
+		if (H == "s" || H == "z") return "h";
+		if (H == "d" || H == "f") return "m";
+		if (H == "p") return "f";
+		if (H == "g")return "n";
+		if (H == " " || H == "!" || H == "?" || H == "." || H == "~" || H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "m" || H == "n" || H == "h") return H;
+	}
+	else if (weight === "light") {
+		if (H == "c" || H == "t") return "e";
+		if (H == "q" || H == "k" || H == "x") return "k";
+		if (H == "j" || H == "l" || H == "r") return "a";
+		if (H == "s") return "z";
+		if (H == "z") return "s";
+		if (H == "d" || H == "f" || H == "m" || H == "g") return "m";
+		if (H == "b" || H == "h" || H == "n" || H == "v" || H == "w" || H == "p" || H == " " || H == "'" || H == "?" || H == "!" || H == "." || H == "," || H == "~" || H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "y") return H;
+	}
 }
 
 // Makes the character stutter if she has a vibrating egg set to high intensity
