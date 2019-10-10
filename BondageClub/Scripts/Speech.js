@@ -118,6 +118,12 @@ function Garble(H, weight) {
 		if (H == "d" || H == "f" || H == "m" || H == "g") return "m";
 		if (H == "b" || H == "h" || H == "n" || H == "v" || H == "w" || H == "p" || H == " " || H == "'" || H == "?" || H == "!" || H == "." || H == "," || H == "~" || H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "y") return H;
 	}
+	else if (weight === "babytalk") {
+		if (H == "k" || H == "l") return "w";
+		if (H == "s") return "sh";
+		if (H == "t") return "st";
+		if (H == "a" || H == "b" || H == "c" || H == "d" || H == "e" || H == "f" || H == "g" || H == "h" || H == "i" || H == "j" || H == "m" || H == "n" || H == "o" || H == "p" || H == "q" || H == "r" || H == "u" || H == "v" || H == "w" || H == "x" || H == "y" || H == "z" || H == " " || H == "'" || H == "?" || H == "!" || H == "." || H == ",") return H;
+	}
 }
 
 // Makes the character stutter if she has a vibrating egg set to high intensity
@@ -176,17 +182,8 @@ function SpeechBabyTalk(C, CD) {
 	var NS = "";
 
 	if (C == Player && NurseryRegressedTalk) {
-		for (var L = 0; L < CD.length; L++) {
-			var H = CD.charAt(L).toLowerCase();
-			if (H == "(") Par = true;
-			if (!Par) {
-				if (H == "k" || H == "l") NS = NS + "w";
-				if (H == "s") NS = NS + "sh";
-				if (H == "t") NS = NS + "st";
-				if (H == "a" || H == "b" || H == "c" || H == "d" || H == "e" || H == "f" || H == "g" || H == "h" || H == "i" || H == "j" || H == "m" || H == "n" || H == "o" || H == "p" || H == "q" || H == "r" || H == "u" || H == "v" || H == "w" || H == "x" || H == "y" || H == "z" || H == " " || H == "'" || H == "?" || H == "!" || H == "." || H == ",") NS = NS + H;
-			} else NS = NS + CD.charAt(L);
-			if (H == ")") Par = false;
-		}
+		// TODO: Needs testing, don't know how to test myself.
+		NS = GarbleLoop(CD, "babytalk");
 		return NS;
 	}
 
