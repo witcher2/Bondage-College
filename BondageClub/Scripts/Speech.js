@@ -126,9 +126,13 @@ function Garble(H, weight) {
 	}
 }
 
-// Makes the character stutter if she has a vibrating egg set to high intensity
 function SpeechStutter(C, CD) {
-
+	/*
+	Makes the character stutter if she has a vibrating egg set to high intensity.
+	:Param object C: An object containing information about the player.
+	:Param string CD: The message that has to be stuttered.
+	:return string: The message, stuttered or regular.
+	*/
 	if (CD == null) CD = "";
 	if (C.IsEgged()) {
 		var intensity = C.Appearance
@@ -174,8 +178,13 @@ function SpeechStutter(C, CD) {
 	return CD;
 }
 
-// Makes Character talk like a Baby if the have drunk regression milk
 function SpeechBabyTalk(C, CD) {
+	/*
+	Makes the Player talk like a baby if drunk on regression milk.
+	:Param object C: An object containing information about the player.
+	:Param string CD: The message that has to be put in baby talk.
+	:return string: The message, in baby talk or regular.
+	*/
 	if (CD == null) CD = "";
 
 	var Par = false;
