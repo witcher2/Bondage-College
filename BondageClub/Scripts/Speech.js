@@ -21,7 +21,6 @@ function SpeechGarble(C, CD) {
 
 	// Total gags always returns mmmmm
 	if (C.Effect.indexOf("GagTotal") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafTotal") >= 0))) {
-		console.log("total gag");
 		NS = GarbleLoop(CD, "total");
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
@@ -30,7 +29,6 @@ function SpeechGarble(C, CD) {
 
 	// Heavy garble - Almost no letter stays the same
 	if (C.Effect.indexOf("GagHeavy") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafHeavy") >= 0))) {
-		console.log("heavy gag");
 		NS = GarbleLoop(CD, "heavy");
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
@@ -39,7 +37,6 @@ function SpeechGarble(C, CD) {
 
 	// Normal garble, keep vowels and a few letters the same
 	if (C.Effect.indexOf("GagNormal") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafNormal") >= 0))) {
-		console.log("normal gag");
 		NS = GarbleLoop(CD, "normal");
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
