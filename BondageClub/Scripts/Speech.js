@@ -22,14 +22,7 @@ function SpeechGarble(C, CD) {
 	// Total gags always returns mmmmm
 	if (C.Effect.indexOf("GagTotal") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafTotal") >= 0))) {
 		console.log("total gag");
-		// NS = GarbleTotal(C, CD, Par);
-		for (var L = 0; L < CD.length; L++) {
-			var H = CD.charAt(L).toLowerCase();
-			if (H == "(") Par = true;
-			if (Par) NS += CD.charAt(L);
-			else NS += Garble(H, "total");
-			if (H == ")") Par = false;
-		}
+		NS = GarbleLoop(CD, "total");
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
 		return NS;
@@ -38,13 +31,7 @@ function SpeechGarble(C, CD) {
 	// Heavy garble - Almost no letter stays the same
 	if (C.Effect.indexOf("GagHeavy") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafHeavy") >= 0))) {
 		console.log("heavy gag");
-		for (var L = 0; L < CD.length; L++) {
-			var H = CD.charAt(L).toLowerCase();
-			if (H == "(") Par = true;
-			if (Par) NS += CD.charAt(L);
-			else NS += Garble(H, "heavy");
-			if (H == ")") Par = false;
-		}
+		NS = GarbleLoop(CD, "heavy");
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
 		return NS;
@@ -53,13 +40,7 @@ function SpeechGarble(C, CD) {
 	// Normal garble, keep vowels and a few letters the same
 	if (C.Effect.indexOf("GagNormal") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafNormal") >= 0))) {
 		console.log("normal gag");
-		for (var L = 0; L < CD.length; L++) {
-			var H = CD.charAt(L).toLowerCase();
-			if (H == "(") Par = true;
-			if (!Par) NS += Garble(H, "normal");
-			else NS += CD.charAt(L);
-			if (H == ")") Par = false;
-		}
+		NS = GarbleLoop(CD, "normal");
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
 		return NS;
@@ -67,14 +48,7 @@ function SpeechGarble(C, CD) {
 
 	// Light garble, half of the letters stay the same
 	if (C.Effect.indexOf("GagLight") >= 0 || ((C.ID != 0) && (Player.Effect.indexOf("DeafLight") >= 0))) {
-		console.log("light gag");
-		for (var L = 0; L < CD.length; L++) {
-			var H = CD.charAt(L).toLowerCase();
-			if (H == "(") Par = true;
-			if (!Par) NS += Garble(H, "light");
-			else NS += CD.charAt(L);
-			if (H == ")") Par = false;
-		}
+		NS = GarbleLoop(CD, "light");
 		NS = SpeechStutter(C, NS);
 		NS = SpeechBabyTalk(C, NS);
 		return NS;
@@ -85,6 +59,27 @@ function SpeechGarble(C, CD) {
 	CD = SpeechBabyTalk(C, CD);
 	return CD;
 
+}
+
+function GarbleLoop(CD, weight) {
+	/*
+	Starts the loop that goes over the message to garble it.
+	A seperate function does the actual garbling.
+	:Param string CD: The message to garble.
+	:Param string weight: Indicates how badly to garble.
+	:return string: The garbled message.
+	*/
+	var Par = false;
+	var NS = "";
+
+	for (var L = 0; L < CD.length; L++) {
+		var H = CD.charAt(L).toLowerCase();
+		if (H == "(") Par = true;
+		if (Par) NS += CD.charAt(L);
+		else NS += Garble(H, weight);
+		if (H == ")") Par = false;
+	}
+	return NS
 }
 
 function Garble(H, weight) {
