@@ -200,7 +200,7 @@ function DialogMenuButtonBuild(C) {
 
 	// Main buttons
 	if (DialogProgress < 0) {
-		if (DialogInventory.length > 12) DialogMenuButton.push("Next");
+		if ((DialogInventory.length > 12) && Player.CanInteract()) DialogMenuButton.push("Next");
 		if (InventoryItemHasEffect(Item, "Lock", true) && DialogCanUnlock(C, Item) && InventoryAllow(C, Item.Asset.Prerequisite) && !InventoryGroupIsBlocked(C) && (Player.CanInteract() || ((C.ID == 0) && InventoryItemHasEffect(Item, "Block", true)))) DialogMenuButton.push("Unlock");
 		if ((Item != null) && (C.ID == 0) && (!Player.CanInteract() || (InventoryItemHasEffect(Item, "Lock", true) && !DialogCanUnlock(C, Item))) && (DialogMenuButton.indexOf("Unlock") < 0) && InventoryAllow(C, Item.Asset.Prerequisite) && !InventoryGroupIsBlocked(C)) DialogMenuButton.push("Struggle");
 		if (InventoryItemHasEffect(Item, "Lock", true) && !Player.IsBlind() && (Item.Property != null) && (Item.Property.LockedBy != null) && (Item.Property.LockedBy != "")) DialogMenuButton.push("InspectLock");
@@ -235,7 +235,7 @@ function DialogInventoryBuild(C) {
 
 		if (DialogItemPermissionMode) {
 			for (var A = 0; A < Asset.length; A++)
-				if (Asset[A].Enable && Asset[A].Wear && Asset[A].Group.Name == C.FocusGroup.Name)
+				if (Asset[A].Enable && (Asset[A].Wear || Asset[A].IsLock) && Asset[A].Group.Name == C.FocusGroup.Name)
 					if (!DialogInventory.some(D => (D.Asset.Group.Name == Asset[A].Group.Name) && (D.Asset.Name == Asset[A].Name)))
 						DialogInventory.push({
 							Asset: Asset[A],
