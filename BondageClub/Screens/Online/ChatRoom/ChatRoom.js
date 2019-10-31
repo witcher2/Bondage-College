@@ -31,17 +31,16 @@ function ChatRoomCurrentCharacterIsAdmin() { return ((CurrentCharacter != null) 
 // Creates the chat room input elements
 function ChatRoomCreateElement() {
 	if (document.getElementById("InputChat") == null) {
-		ElementCreateInput("InputChat", "text", "", "250");
+		ElementCreateTextArea("InputChat"); //switched to textarea for larger input field
+		document.getElementById("InputChat").setAttribute("maxLength", 250);
 		document.getElementById("InputChat").setAttribute("autocomplete", "off");
 		ElementCreateDiv("TextAreaChatLog");
-		ElementPositionFix("TextAreaChatLog", 36, 1005, 5, 988, 923);
+		ElementPositionFix("TextAreaChatLog", 36, 1005, 5, 988, 859);
 		ElementContent("TextAreaChatLog", ChatRoomLog);
 		ElementScrollToEnd("TextAreaChatLog");
-		if (Player.ChatSettings) {
-			for (var property in Player.ChatSettings) {
+		if (Player.ChatSettings)
+			for (var property in Player.ChatSettings)
 				ElementSetDataAttribute("TextAreaChatLog", property, Player.ChatSettings[property]);
-			}
-		}
 		ElementFocus("InputChat");
 	}
 }
@@ -147,13 +146,14 @@ function ChatRoomRun() {
 	ChatRoomBackground = "";
 	DrawRect(0, 0, 2000, 1000, "Black");
 	ChatRoomDrawCharacter(false);
-	ElementPosition("InputChat", 1339, 959, 668);
-	ElementPositionFix("TextAreaChatLog", 36, 1005, 5, 988, 923);
-	DrawButton(1675, 935, 60, 60, "", "White", "Icons/Small/Chat.png");
-	if (Player.CanKneel()) DrawButton(1740, 935, 60, 60, "", "White", "Icons/Small/Kneel.png");
-	if (Player.CanChange()) DrawButton(1805, 935, 60, 60, "", "White", "Icons/Small/Dress.png");
-	DrawButton(1870, 935, 60, 60, "", "White", "Icons/Small/Character.png");
-	if (Player.CanWalk()) DrawButton(1935, 935, 60, 60, "", "White", "Icons/Small/Exit.png");
+	ElementPositionFix("TextAreaChatLog", 36, 1005, 5, 988, 859);
+	ElementPosition("InputChat", 1405, 929, 798, 117);
+	DrawButton(1935, 870, 60, 60, "", "White", "Icons/Small/Preference.png");
+	DrawButton(1805, 870, 60, 60, "", "White", "Icons/Small/Chat.png");
+	if (Player.CanKneel()) DrawButton(1805, 935, 60, 60, "", "White", "Icons/Small/Kneel.png");
+	if (Player.CanChange()) DrawButton(1870, 935, 60, 60, "", "White", "Icons/Small/Dress.png");
+	DrawButton(1870, 870, 60, 60, "", "White", "Icons/Small/Character.png");
+	if ((Player.CanWalk() && !ChatRoomData.Locked) || ChatRoomPlayerIsAdmin()) DrawButton(1935, 935, 60, 60, "", "White", "Icons/Small/Exit.png");
 }
 
 // When the player clicks in the chat room
@@ -161,17 +161,29 @@ function ChatRoomClick() {
 	
 	// When the user chats
 	if ((MouseX >= 0) && (MouseX < 1000) && (MouseY >= 0) && (MouseY < 1000)) ChatRoomDrawCharacter(true);
-	if ((MouseX >= 1675) && (MouseX < 1735) && (MouseY >= 935) && (MouseY < 995)) ChatRoomSendChat();
+	if ((MouseX >= 1805) && (MouseX < 1865) && (MouseY >= 875) && (MouseY < 935)) ChatRoomSendChat();
+
+	// Room Admin controls
+	//if ((MouseX >= 1805) && (MouseX < 1865) && (MouseY >= 870) && (MouseY < 935) &&  ChatRoomPlayerIsAdmin())  ServerSend("ChatRoomAdmin", { MemberNumber: Player.ID, Action: "Private" });
+	//if ((MouseX >= 1870) && (MouseX < 1930) && (MouseY >= 870) && (MouseY < 935) &&  ChatRoomPlayerIsAdmin() && Player.CanChange())  ServerSend("ChatRoomAdmin", { MemberNumber: Player.ID, Action: "Lock" });
+	if ((MouseX >= 1935) && (MouseX < 1995) && (MouseY >= 875) && (MouseY < 935)) {// for RoomAdmin Screen
+		//console.log('roomadmin')
+		ElementRemove("InputChat");
+		ElementRemove("TextAreaChatLog");
+		CharacterAppearanceReturnRoom = "ChatRoom"; 
+		CharacterAppearanceReturnModule = "Online";
+		CommonSetScreen("Online", "ChatAdmin");
+	}
 	
 	// When the player kneels
-	if ((MouseX >= 1740) && (MouseX < 1800) && (MouseY >= 935) && (MouseY < 995) && Player.CanKneel()) { 
+	if ((MouseX >= 1805) && (MouseX < 1865) && (MouseY >= 935) && (MouseY < 995) && Player.CanKneel()) { 
 		ServerSend("ChatRoomChat", { Content: Player.Name + " " + TextGet((Player.ActivePose == null) ? "KneelDown": "StandUp"), Type: "Action" } );
 		CharacterSetActivePose(Player, (Player.ActivePose == null) ? "Kneel" : null);
 		ChatRoomCharacterUpdate(Player);
 	}
 	
 	// When the user wants to change clothes
-	if ((MouseX >= 1805) && (MouseX < 1865) && (MouseY >= 935) && (MouseY < 995) && Player.CanChange()) { 
+	if ((MouseX >= 1870) && (MouseX < 1930) && (MouseY >= 935) && (MouseY < 995) && Player.CanChange()) { 
 		ElementRemove("InputChat");
 		ElementRemove("TextAreaChatLog");
 		CharacterAppearanceReturnRoom = "ChatRoom"; 
@@ -180,14 +192,14 @@ function ChatRoomClick() {
 	}
 
 	// When the user checks her profile
-	if ((MouseX >= 1870) && (MouseX < 1930) && (MouseY >= 935) && (MouseY < 995)) {
+	if ((MouseX >= 1870) && (MouseX < 1930) && (MouseY >= 875) && (MouseY < 935)) {
 		ElementRemove("InputChat");
 		ElementRemove("TextAreaChatLog");
 		InformationSheetLoadCharacter(Player);
 	}
 
 	// When the user leaves
-	if ((MouseX >= 1935) && (MouseX < 1995) && (MouseY >= 935) && (MouseY < 995) && (Player.CanWalk())) {
+	if ((MouseX >= 1935) && (MouseX < 1995) && (MouseY >= 935) && (MouseY < 995) && (((Player.CanWalk()) && !ChatRoomData.Locked) || ChatRoomPlayerIsAdmin())) {
 		ElementRemove("InputChat");
 		ElementRemove("TextAreaChatLog");
 		ServerSend("ChatRoomLeave", "");
@@ -200,7 +212,10 @@ function ChatRoomClick() {
 function ChatRoomKeyDown() {
 
 	// The ENTER key sends the chat
-	if (KeyPress == 13) ChatRoomSendChat();
+	if (KeyPress == 13) {	
+		event.preventDefault(); //needed for <textarea> otherwise it always adds a new line after clearing the field
+		ChatRoomSendChat()
+	};
 
 	// On page up, we show the previous chat typed
 	if (KeyPress == 33) {
@@ -397,7 +412,7 @@ function ChatRoomMessage(data) {
 			// Adds the message and scrolls down unless the user has scrolled up
 			var ShouldScrollDown = ElementIsScrolledToEnd("TextAreaChatLog");
 			var DataAttributes = 'data-time="' + ChatRoomCurrentTime() + '" data-sender="' + data.Sender + '"';
-			var BackgroundColor = ((data.Type == "Emote" || data.Type == "Action") ? 'style="background-color:' + ChatRoomGetLighterColor(SenderCharacter.LabelColor) + ';"' : "");
+			var BackgroundColor = ((data.Type == "Emote" || data.Type == "Action") ? 'style="background-color:' + ChatRoomGetTransparentColor(SenderCharacter.LabelColor) + ';"' : "");
 			ChatRoomLog = ChatRoomLog + '<div class="ChatMessage ChatMessage' + data.Type + enterLeave + '" ' + DataAttributes + ' ' + BackgroundColor + '>' + msg + '</div>';
 			if (document.getElementById("TextAreaChatLog") != null) {
 				ElementContent("TextAreaChatLog", ChatRoomLog);
@@ -466,9 +481,9 @@ function ChatRoomCurrentTime() {
 	return ("0" + D.getHours()).substr(-2) + ":" + ("0" + D.getMinutes()).substr(-2);
 }
 
-// Returns a lighter color for the current HexCode
-function ChatRoomGetLighterColor(Color) {
-	if (!Color) return "#f0f0f0";
+// Returns a transparent version of the specified hex color
+function ChatRoomGetTransparentColor(Color) {
+	if (!Color) return "rgba(128,128,128,0.1)";
 	var R = Color.substring(1, 3), G = Color.substring(3, 5), B = Color.substring(5, 7);
 	return "rgba(" + parseInt(R, 16) + "," + parseInt(G, 16) + "," + parseInt(B, 16) + ",0.1)";
 }

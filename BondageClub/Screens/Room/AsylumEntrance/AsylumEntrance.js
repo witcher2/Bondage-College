@@ -45,6 +45,7 @@ function AsylumEntranceClick() {
 		if (LogValue("Committed", "Asylum") >= CurrentTime) AsylumEntranceNurse.Stage = "100";
 		else if (AsylumEntranceNurse.Stage == "100") AsylumEntranceNurse.Stage = "0";
 		if ((LogValue("Escaped", "Asylum") >= CurrentTime) && !AsylumEntranceNurse.IsRestrained()) AsylumEntranceNurse.Stage = "140";
+		ManagementClubSlaveDialog(AsylumEntranceNurse);
 		CharacterSetCurrent(AsylumEntranceNurse);
 	}
 	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 25) && (MouseY < 115) && Player.CanWalk() && (LogValue("Committed", "Asylum") < CurrentTime)) CommonSetScreen("Room", "MainHall");
@@ -69,6 +70,7 @@ function AsylumEntranceWearNurseClothes(C) {
 	InventoryWear(C, "NurseUniform", "Cloth", "#848080");
 	InventoryWear(C, "NurseCap", "Hat", "Default");
 	InventoryWear(C, "Stockings2", "Socks", "Default");
+	InventoryRemove(C, "ClothLower");
 }
 
 // Wears the patient clothes on a character
@@ -81,7 +83,8 @@ function AsylumEntranceWearPatientClothes(C) {
 	InventoryRemove(C, "Wings");
 	InventoryRemove(C, "TailStraps");
 	InventoryRemove(C, "Gloves");
-	InventoryRemove(C, "HairAccessory");
+	InventoryRemove(C, "HairAccessory1");
+	InventoryRemove(C, "HairAccessory2");
 	InventoryRemove(C, "Hat");
 }
 
@@ -94,7 +97,8 @@ function AsylumEntranceIsWearingPatientClothes() {
 	if (InventoryGet(Player, "Wings") != null) return false;
 	if (InventoryGet(Player, "TailStraps") != null) return false;
 	if (InventoryGet(Player, "Gloves") != null) return false;
-	if (InventoryGet(Player, "HairAccessory") != null) return false;
+	if (InventoryGet(Player, "HairAccessory1") != null) return false;
+	if (InventoryGet(Player, "HairAccessory2") != null) return false;
 	if (InventoryGet(Player, "Hat") != null) return false;
 	return true;
 }

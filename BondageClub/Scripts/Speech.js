@@ -91,6 +91,7 @@ function Garble(H, weight) {
 		else return "m";
 	}
 	else if (weight === "heavy") {
+		// Regular characters
 		if (H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "y" || H == "t") return "e";
 		if (H == "c" || H == "q" || H == "x") return "k";
 		if (H == "j" || H == "k" || H == "l" || H == "r" || H == "w") return "a";
@@ -98,8 +99,22 @@ function Garble(H, weight) {
 		if (H == "b" || H == "p" || H == "v") return "f";
 		if (H == "d" || H == "f" || H == "g" || H == "n" || H == "m") return "m";
 		if (H == " " || H == "." || H == "?" || H == "!" || H == "~") return H;
+
+		// Accents/Latin characters
+		if (H == "á" || H == "â" || H == "à" || H == "é" || H == "ê" || H == "è" || H == "ë" || H == "í" || H == "î" || H == "ì" || H == "ï" || H == "ó" || H == "ô" || H == "ò" || H == "ú" || H == "û" || H == "ù" || H == "ü") NS = NS + "e";
+		if (H == "ç") NS = NS + "h";
+		if (H == "ñ") NS = NS + "m";
+
+		// Cyrillic characters
+		if (H == "а" || H == "е" || H == "и" || H == "о" || H == "у" || H == "ю" || H == "л"|| H == "я") NS = NS + "е";
+		if (H == "с" || H == "й" || H == "х") NS = NS + "к";
+		if (H == "ж" || H == "к" || H == "л" || H == "р" || H == "у") NS = NS + "а";
+		if (H == "з" || H == "с" || H == "г" || H == "й") NS = NS + "г";
+		if (H == "б" || H == "р" || H == "в" || H == "ы") NS = NS + "ф";
+		if (H == "д" || H == "ф" || H == "г" || H == "н" || H == "м") NS = NS + "м";
 	}
 	else if (weight === "normal") {
+		// Regular characters
 		if (H == "v" || H == "b" || H == "c" || H == "t") return "e";
 		if (H == "q" || H == "k" || H == "x") return "k";
 		if (H == "w" || H == "y" || H == "j" || H == "l" || H == "r") return "a";
@@ -108,8 +123,27 @@ function Garble(H, weight) {
 		if (H == "p") return "f";
 		if (H == "g")return "n";
 		if (H == " " || H == "!" || H == "?" || H == "." || H == "~" || H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "m" || H == "n" || H == "h") return H;
+
+		// Accents/Latin characters
+		if (H == "á" || H == "â" || H == "à") NS = NS + "a";
+		if (H == "é" || H == "ê" || H == "è" || H == "ë") NS = NS + "e";
+		if (H == "í" || H == "î" || H == "ì" || H == "ï") NS = NS + "i";
+		if (H == "ó" || H == "ô" || H == "ò") NS = NS + "o";
+		if (H == "ú" || H == "û" || H == "ù" || H == "ü") NS = NS + "u";
+		if (H == "ç") NS = NS + "s";
+		if (H == "ñ") NS = NS + "n";
+
+		// Cyrillic characters
+		if (H == "в" || H == "ф" || H == "б" || H == "п") NS = NS + "фы";
+		if (H == "г" || H == "к" || H == "х") NS = NS + "к";
+		if (H == "в" || H == "у" || H == "ж" || H == "л" || H == "р") NS = NS + "а";
+		if (H == "с" || H == "я") NS = NS + "х";
+		if (H == "д" || H == "ф") NS = NS + "м";
+		if (H == "р") NS = NS + "ф";
+		if (H == "г") NS = NS + "н";
 	}
 	else if (weight === "light") {
+		// Regular characters
 		if (H == "c" || H == "t") return "e";
 		if (H == "q" || H == "k" || H == "x") return "k";
 		if (H == "j" || H == "l" || H == "r") return "a";
@@ -117,6 +151,24 @@ function Garble(H, weight) {
 		if (H == "z") return "s";
 		if (H == "d" || H == "f" || H == "m" || H == "g") return "m";
 		if (H == "b" || H == "h" || H == "n" || H == "v" || H == "w" || H == "p" || H == " " || H == "'" || H == "?" || H == "!" || H == "." || H == "," || H == "~" || H == "a" || H == "e" || H == "i" || H == "o" || H == "u" || H == "y") return H;
+
+		// Accents/Latin characters
+		if (H == "á" || H == "â" || H == "à") NS = NS + "a";
+		if (H == "é" || H == "ê" || H == "è" || H == "ë") NS = NS + "e";
+		if (H == "í" || H == "î" || H == "ì" || H == "ï") NS = NS + "i";
+		if (H == "ó" || H == "ô" || H == "ò") NS = NS + "o";
+		if (H == "ú" || H == "û" || H == "ù" || H == "ü") NS = NS + "u";
+		if (H == "ç") NS = NS + "s";
+		if (H == "ñ") NS = NS + "n";
+
+		// Cyrillic characters
+		if (H == "ч" || H == "ц") NS = NS + "е";
+		if (H == "й" || H == "ф" || H == "в") NS = NS + "к";
+		if (H == "д" || H == "л" || H == "щ"|| H == "я") NS = NS + "а";
+		if (H == "з") NS = NS + "с";
+		if (H == "с") NS = NS + "з";
+		if (H == "д" || H == "ф" || H == "м" || H == "г") NS = NS + "м";
+		if (H == "а" || H == "п" || H == "р" || H == "о" || H == "к" || H == "е"  || H == "н" || H == "м" || H == "и" || H == "т" ) NS = NS + H;
 	}
 	else if (weight === "babytalk") {
 		if (H == "k" || H == "l") return "w";
@@ -155,7 +207,7 @@ function SpeechStutter(C, CD) {
 			if (H == "(") Par = true;
 
 			// If we are not between brackets and at the start of a word, there's a chance to stutter that word
-			if (!Par && CS >= 0 && (H.match(/[a-z]/i))) {
+			if (!Par && CS >= 0 && (H.match(/[[a-zа-яё]/i))) {
 
 				// Generate a pseudo-random number using a seed, so that the same text always stutters the same way.
 				var R = Math.sin(seed++) * 10000;
