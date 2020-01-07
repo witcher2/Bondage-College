@@ -12,13 +12,19 @@ var PreferenceChatEnterLeaveIndex = 0;
 var PreferenceChatMemberNumbersSelected = "";
 var PreferenceChatMemberNumbersList = null;
 var PreferenceChatMemberNumbersIndex = 0;
+var PreferenceSettingsSensDepList = null;
+var PreferenceSettingsSensDepIndex = 0;
+var PreferenceSettingsVolumeList = null;
+var PreferenceSettingsVolumeIndex = 0;
 
 // When the preference screens loads
 function PreferenceLoad() {
+
+	// Sets up the player label color
 	if (!CommonIsColor(Player.LabelColor)) Player.LabelColor = "#ffffff";
 	ElementCreateInput("InputCharacterLabelColor", "text", Player.LabelColor);
 
-	// If the user never used chat settings before, construct them to replicate the default behavior
+	// If the user never set the chat settings before, construct them to replicate the default behavior
 	if (!Player.ChatSettings) Player.ChatSettings = {
 		DisplayTimestamps: true,
 		ColorNames: true,
@@ -26,15 +32,39 @@ function PreferenceLoad() {
 		ColorEmotes: true
 	};
 
+	// If the user never set the visual settings before, construct them to replicate the default behavior
+	if (!Player.VisualSettings) Player.VisualSettings = {
+		ForceFullHeight: false
+	};
+
+	// If the user never set the audio settings before, construct them to replicate the default behavior
+    if (!Player.AudioSettings || (typeof Player.AudioSettings.Volume !== "number") || (typeof Player.AudioSettings.PlayBeeps !== "boolean")) Player.AudioSettings = {
+        Volume: 1,
+        PlayBeeps: false
+    };
+
+	//if the user never set the gameplay settings before, construct them to replicate the default behavior
+	if (!Player.GameplaySettings || (typeof Player.GameplaySettings.SensDepChatLog !== "string") || (typeof Player.GameplaySettings.BlindDisableExamine !== "boolean") || (typeof Player.GameplaySettings.DisableAutoRemoveLogin !== "boolean")) Player.GameplaySettings = {
+		SensDepChatLog: "Normal",
+        BlindDisableExamine: false,
+        DisableAutoRemoveLogin: false
+    };
+
+	// Sets the chat themes
 	PreferenceChatColorThemeList = ["Light", "Dark"];
 	PreferenceChatEnterLeaveList = ["Normal", "Smaller", "Hidden"];
 	PreferenceChatMemberNumbersList = ["Always", "Never", "OnMouseover"];
+	PreferenceSettingsSensDepList = ["Normal", "SensDepNames", "SensDepTotal"];
+    PreferenceSettingsVolumeList = [1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
 	PreferenceChatColorThemeIndex = (!Player.ChatSettings || PreferenceChatColorThemeList.indexOf(Player.ChatSettings.ColorTheme) < 0) ? 0 : PreferenceChatColorThemeList.indexOf(Player.ChatSettings.ColorTheme);
 	PreferenceChatEnterLeaveIndex = (!Player.ChatSettings || PreferenceChatEnterLeaveList.indexOf(Player.ChatSettings.EnterLeave) < 0) ? 0 : PreferenceChatEnterLeaveList.indexOf(Player.ChatSettings.EnterLeave);
 	PreferenceChatMemberNumbersIndex = (!Player.ChatSettings || PreferenceChatMemberNumbersList.indexOf(Player.ChatSettings.MemberNumbers) < 0) ? 0 : PreferenceChatMemberNumbersList.indexOf(Player.ChatSettings.MemberNumbers);
+	PreferenceSettingsSensDepIndex = (!Player.GameplaySettings || PreferenceSettingsSensDepList.indexOf(Player.GameplaySettings.SensDepChatLog) < 0 ) ? 0 : PreferenceSettingsSensDepList.indexOf(Player.GameplaySettings.SensDepChatLog);
+    PreferenceSettingsVolumeIndex = (!Player.AudioSettings || PreferenceSettingsVolumeList.indexOf(Player.AudioSettings.Volume) < 0) ? 0 : PreferenceSettingsVolumeList.indexOf(Player.AudioSettings.Volume);
 	PreferenceChatColorThemeSelected = PreferenceChatColorThemeList[PreferenceChatColorThemeIndex];
 	PreferenceChatEnterLeaveSelected = PreferenceChatEnterLeaveList[PreferenceChatEnterLeaveIndex];
 	PreferenceChatMemberNumbersSelected = PreferenceChatMemberNumbersList[PreferenceChatMemberNumbersIndex];
+
 }
 
 // Run the preference screen
@@ -49,6 +79,7 @@ function PreferenceRun() {
 	// Draw the online preferences
 	MainCanvas.textAlign = "left";
 	DrawText(TextGet("Preferences"), 500, 125, "Black", "Gray");
+    if (PreferenceMessage != "") DrawText(TextGet(PreferenceMessage), 865, 125, "Red", "Black");
 	DrawText(TextGet("CharacterLabelColor"), 500, 225, "Black", "Gray");
 	ElementPosition("InputCharacterLabelColor", 990, 212, 250);
 	if (CommonIsColor(ElementValue("InputCharacterLabelColor"))) document.getElementById("InputCharacterLabelColor").style.color = ElementValue("InputCharacterLabelColor");
@@ -57,8 +88,23 @@ function PreferenceRun() {
 	DrawButton(1140, 187, 65, 65, "", "White", "Icons/Color.png");
 	DrawButton(500, 280, 90, 90, "", "White", "Icons/Next.png");
 	DrawText(TextGet("ItemPermission") + " " + TextGet("PermissionLevel" + Player.ItemPermission.toString()), 615, 325, "Black", "Gray");
-	if (PreferenceMessage != "") DrawText(TextGet(PreferenceMessage), 500, 550, "Red", "Black");
+    DrawText(TextGet("AudioVolume"), 800, 425, "Black", "Gray");
+	DrawText(TextGet("SensDepSetting"), 800, 505, "Black", "Gray");
+    DrawText(TextGet("PlayBeeps"), 600, 585, "Black", "Gray");
+    DrawButton(500, 552, 64, 64, "", "White", (Player.AudioSettings && Player.AudioSettings.PlayBeeps) ? "Icons/Checked.png" : "");
+    DrawText(TextGet("BlindDisableExamine"), 600, 665, "Black", "Gray");
+    DrawButton(500, 632, 64, 64, "", "White", (Player.GameplaySettings && Player.GameplaySettings.BlindDisableExamine) ? "Icons/Checked.png" : "");
+    DrawText(TextGet("DisableAutoRemoveLogin"), 600, 745, "Black", "Gray");
+    DrawButton(500, 712, 64, 64, "", "White", (Player.GameplaySettings && Player.GameplaySettings.DisableAutoRemoveLogin) ? "Icons/Checked.png" : "");
+    DrawText(TextGet("ForceFullHeight"), 600, 825, "Black", "Gray");
+    DrawButton(500, 792, 64, 64, "", "White", (Player.VisualSettings && Player.VisualSettings.ForceFullHeight) ? "Icons/Checked.png" : "");
 	MainCanvas.textAlign = "center";
+    DrawBackNextButton(500, 392, 250, 64, Player.AudioSettings.Volume * 100 + "%", "White", "",
+        () => PreferenceSettingsVolumeList[(PreferenceSettingsVolumeIndex + PreferenceSettingsVolumeList.length - 1) % PreferenceSettingsVolumeList.length] * 100 + "%",
+        () => PreferenceSettingsVolumeList[(PreferenceSettingsVolumeIndex + 1) % PreferenceSettingsVolumeList.length] * 100 + "%");
+	DrawBackNextButton(500, 472, 250, 64, TextGet(Player.GameplaySettings.SensDepChatLog), "White", "",
+		() => TextGet(PreferenceSettingsSensDepList[(PreferenceSettingsSensDepIndex + PreferenceSettingsSensDepList.length - 1) % PreferenceSettingsSensDepList.length]),
+		() => TextGet(PreferenceSettingsSensDepList[(PreferenceSettingsSensDepIndex + 1) % PreferenceSettingsSensDepList.length]));
 
 	// Draw the player & controls
 	DrawCharacter(Player, 50, 50, 0.9);
@@ -97,19 +143,39 @@ function PreferenceClick() {
 	if ((MouseX >= 1140) && (MouseX < 1205) && (MouseY >= 187) && (MouseY < 252)) PreferenceColorPick = (PreferenceColorPick != "InputCharacterLabelColor") ? "InputCharacterLabelColor" : "";
 	if ((MouseX >= 1250) && (MouseX < 1925) && (MouseY >= 85) && (MouseY < 915) && (PreferenceColorPick != "")) ElementValue(PreferenceColorPick, DrawRGBToHex(MainCanvas.getImageData(MouseX, MouseY, 1, 1).data));
 
+    // If we must change audio gameplay or visual settings
+    if ((MouseX >= 500) && (MouseX < 750) && (MouseY >= 392) && (MouseY < 456)) {
+        if (MouseX <= 625) PreferenceSettingsVolumeIndex = (PreferenceSettingsVolumeList.length + PreferenceSettingsVolumeIndex - 1) % PreferenceSettingsVolumeList.length;
+        else PreferenceSettingsVolumeIndex = (PreferenceSettingsVolumeIndex + 1) % PreferenceSettingsVolumeList.length;
+        Player.AudioSettings.Volume = PreferenceSettingsVolumeList[PreferenceSettingsVolumeIndex];
+    }
+	if ((MouseX >= 500) && (MouseX < 750) && (MouseY >= 472) && (MouseY < 536)) {
+		if (MouseX <= 625) PreferenceSettingsSensDepIndex = (PreferenceSettingsSensDepList.length + PreferenceSettingsSensDepIndex - 1) % PreferenceSettingsSensDepList.length;
+		else PreferenceSettingsSensDepIndex = (PreferenceSettingsSensDepIndex + 1) % PreferenceSettingsSensDepList.length;
+		Player.GameplaySettings.SensDepChatLog = PreferenceSettingsSensDepList[PreferenceSettingsSensDepIndex];
+	}
+	if ((MouseX >= 500) && (MouseX < 564)) {
+		if ((MouseY >= 552) && (MouseY < 616)) Player.AudioSettings.PlayBeeps = !Player.AudioSettings.PlayBeeps;
+		if ((MouseY >= 632) && (MouseY < 696)) Player.GameplaySettings.BlindDisableExamine = !Player.GameplaySettings.BlindDisableExamine;
+        if ((MouseY >= 712) && (MouseY < 776)) Player.GameplaySettings.DisableAutoRemoveLogin = !Player.GameplaySettings.DisableAutoRemoveLogin;
+		if ((MouseY >= 792) && (MouseY < 856)) Player.VisualSettings.ForceFullHeight = !Player.VisualSettings.ForceFullHeight;
+	}
 }
 
-// when the user exit this screen
+// When the user exit the preference screen, we push the data back to the server
 function PreferenceExit() {
-	// If we must save and exit
 	if (CommonIsColor(ElementValue("InputCharacterLabelColor"))) {
 		Player.LabelColor = ElementValue("InputCharacterLabelColor");
 		var P = {
 			ItemPermission: Player.ItemPermission,
 			LabelColor: Player.LabelColor,
-			ChatSettings: Player.ChatSettings
-		}
+			ChatSettings: Player.ChatSettings,
+			VisualSettings: Player.VisualSettings,
+			AudioSettings: Player.AudioSettings,		
+			GameplaySettings: Player.GameplaySettings
+		};
 		ServerSend("AccountUpdate", P);
+		PreferenceMessage = "";
 		ElementRemove("InputCharacterLabelColor");
 		CommonSetScreen("Character", "InformationSheet");
 	} else PreferenceMessage = "ErrorInvalidColor";
@@ -140,7 +206,6 @@ function PreferenceSubscreenChatRun() {
 	DrawButton(500, 592, 64, 64, "", "White", (Player.ChatSettings && Player.ChatSettings.ColorNames) ? "Icons/Checked.png" : "");
 	DrawButton(500, 692, 64, 64, "", "White", (Player.ChatSettings && Player.ChatSettings.ColorActions) ? "Icons/Checked.png" : "");
 	DrawButton(500, 792, 64, 64, "", "White", (Player.ChatSettings && Player.ChatSettings.ColorEmotes) ? "Icons/Checked.png" : "");
-
 	DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
 	DrawCharacter(Player, 50, 50, 0.9);
 }
@@ -180,4 +245,9 @@ function PreferenceSubscreenChatClick() {
 		PreferenceSubscreen = "";
 		ElementCreateInput("InputCharacterLabelColor", "text", Player.LabelColor);
 	}
+}
+
+// Return true if sensory deprivation is active
+function PreferenceIsPlayerInSensDep() {
+	return (Player.GameplaySettings && ((Player.GameplaySettings.SensDepChatLog == "SensDepNames") || (Player.GameplaySettings.SensDepChatLog == "SensDepTotal")) && (Player.Effect.indexOf("DeafHeavy") >= 0) && (Player.Effect.indexOf("BlindHeavy") >= 0));
 }

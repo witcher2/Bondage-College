@@ -33,7 +33,9 @@ ItemPelvisLeatherCrop,,,(She grumbles as you strike her butt with the crop.)  A 
 0,,(Nod yes.),(She releases you and smiles.)  Here you go!  Everything is ok now?,MaidReleasePlayer(),!HasOwnerLock
 0,,"Yes, can you release me?",(She releases you and smiles.)  Here you go!  Everything is ok now?,MaidReleasePlayer(),!HasOwnerLock
 0,40,(Nod yes.),(She checks your locks and frowns.)  Is that an owner lock?  Your Mistress might not be pleased if I release you.,,HasOwnerLock
+0,70,(Nod yes and point to your slave collar.),(She checks the lock and frowns.) That is a slave collar. Your Mistress might not be pleased if I change it.,,HasSlaveCollar
 0,40,"Yes, can you release me?",(She checks your locks and frowns.)  Is that an owner lock?  Your Mistress might not be pleased if I release you.,,HasOwnerLock
+0,70,"Yes, can you change my collar?",(She checks the lock and frowns.) That is a slave collar. Your Mistress might not be pleased if I change it.,,HasSlaveCollar
 0,1010,I'm fine.  But I have questions on the club.,Sure.  What would you like to know?,,
 0,100,Get lost girl!,It seems that you need something to shut your foul mouth.  (She produces a gag and silences you.),MaidAngry(),
 0,,"I'm fine, thanks. (Leave her.)","Pleased to meet you.  I'm DialogCharacterName, I work here as a maid.",DialogLeave(),
@@ -55,9 +57,9 @@ ItemPelvisLeatherCrop,,,(She grumbles as you strike her butt with the crop.)  A 
 41,42,I will endure my punishment.,"Very well.  (She releases you, strips you and confiscate your clothes.)",MaidShamePlayer(),
 41,,Forget it then. (Leave her.),,DialogLeave(),
 41,,(Sigh and leave her.),,DialogLeave(),
-42,43,Why are you taking my clothes?,(She frowns.)  Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner will.,"DialogChangeReputation(""Dominant"", 2)",
-42,43,When can I dress back?,Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner will.,,
-42,43,I know I'm a bad submissive.,(She sighs.)  Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner will.,"DialogChangeReputation(""Dominant"", -2)",
+42,43,Why are you taking my clothes?,(She frowns.)  Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner' will.,"DialogChangeReputation(""Dominant"", 2)",
+42,43,When can I dress back?,Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner's will.,,
+42,43,I know I'm a bad submissive.,(She sighs.)  Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner's will.,"DialogChangeReputation(""Dominant"", -2)",
 43,,"Very well, thank you.  (Leave her.)",,DialogLeave(),
 43,,"Fine, I'm going then.  (Leave her.)",,DialogLeave(),
 43,,(Grumble and leave.),,DialogLeave(),
@@ -88,6 +90,22 @@ ItemPelvisLeatherCrop,,,(She grumbles as you strike her butt with the crop.)  A 
 61,62,Let's go see them.,"Absolutely, please come with me.",,
 62,,"Fine, let's go.  (Meet a Club Mistress.)",,MistressExpulsion(),
 62,,(Walk with her to a Club Mistress.),,MistressExpulsion(),
+70,71,(Nod and whimper for help.),"I can help you girl, but you will be shamed for that.  Your reputation will be hurt.",,
+70,71,"I know, but can you still help me?","I can help you girl, but you will be shamed for that.  Your reputation will be hurt.",,
+70,,You're right.  Forget it then. (Leave her.),,DialogLeave(),
+70,,(Sigh and leave her.),,DialogLeave(),
+71,72,(Nod and bow your head.),"Very well.  (She changes the collar, strips you and confiscate your clothes.)",MaidChangeCollarPlayer(),
+71,72,I will endure my punishment.,"Very well.  (She changes the collar, strips you and confiscate your clothes.)",MaidChangeCollarPlayer(),
+71,,Forget it then. (Leave her.),,DialogLeave(),
+71,,(Sigh and leave her.),,DialogLeave(),
+72,73,Why are you taking my clothes?,(She frowns.)  Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner's will.,"DialogChangeReputation(""Dominant"", 2)",
+72,73,When can I dress back?,Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner's will.,,
+72,73,I know I'm a bad submissive.,(She sighs.)  Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner's will.,"DialogChangeReputation(""Dominant"", -2)",
+72,73,(Bow your head in thanks.),Your clothes are confiscated for the next hour.  This humiliation might teach you to respect your owner's will.
+73,,"Very well, thank you.  (Leave her.)",,DialogLeave(),
+73,,"Fine, I'm going then.  (Leave her.)",,DialogLeave(),
+73,,(Grumble and leave.),,DialogLeave(),
+73,1010,I have some questions on the club.,Sure.  What would you like to know?,,
 100,,(Frown and leave her.),,DialogLeave(),
 1000,1001,"Yes, it's my very first time.","It's fine.  I have a few important questions before I let you in, and I need honest answers.",,
 1000,1001,"No, I've been here before.","Very well.  Before I let you in, we need to review the most important rules.  Will you give me honest answers?",,

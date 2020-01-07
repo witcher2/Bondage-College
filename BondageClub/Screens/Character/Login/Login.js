@@ -4,8 +4,8 @@ var LoginMessage = "";
 var LoginCredits = null;
 var LoginCreditsPosition = 0;
 var LoginThankYou = "";
-var LoginThankYouList = ["Alvin", "Bryce", "Christian", "Desch", "Dini", "DonOlaf", "Escurse", "Ethan", "Greendragon", "Kitten", "Laioken", "Michal", "Mindtie", "Misa", "MunchyCat", 
-						 "Nick", "Overlord", "Rashiash", "Robin", "Ryner", "Setsu", "Shadow", "Shaun", "Shinonon", "Simeon", "Sky", "Terry", "William", "Winterisbest", "Xepherio"];
+var LoginThankYouList = ["Alvin", "Ayezona", "BlueWinter", "Bryce", "Christian", "Dan", "Desch", "Dini", "DonOlaf", "Escurse", "Fluffythewhat", "Greendragon", "Kitten", "Laioken", "Lennart", "Michal", "Mindtie", "Misa",
+						 "MunchyCat", "Nick", "Overlord", "Rashiash", "Robin", "Ryner", "Samuel", "Setsu", "Shadow", "Shaun", "Simeon", "SirCody", "Sky", "Victor", "William", "Winterisbest", "Xepherio"];
 var LoginThankYouNext = 0;
 
 // Loads the next thank you bubble
@@ -115,16 +115,31 @@ function LoginMistressItems() {
 		InventoryAdd(Player, "MistressBottom", "ClothLower", false);
 		InventoryAdd(Player, "MistressPadlock", "ItemMisc", false);
 		InventoryAdd(Player, "MistressPadlockKey", "ItemMisc", false);
-		ServerPlayerInventorySync();
+		InventoryAdd(Player, "MistressTimerPadlock", "ItemMisc", false);
 	} else {
 		InventoryDelete(Player, "MistressPadlock", "ItemMisc", false);
 		InventoryDelete(Player, "MistressPadlockKey", "ItemMisc", false);
+		InventoryDelete(Player, "MistressTimerPadlock", "ItemMisc", false);
 		InventoryDelete(Player, "MistressGloves", "Gloves", false);
 		InventoryDelete(Player, "MistressBoots", "Shoes", false);
 		InventoryDelete(Player, "MistressTop", "Cloth", false);
 		InventoryDelete(Player, "MistressBottom", "ClothLower", false);
-		ServerPlayerInventorySync();
 	}
+	ServerPlayerInventorySync();
+}
+
+// Only players that are ponies or trainers can have the pony equipment
+function LoginStableItems() {
+	if (LogQuery("JoinedStable", "PonyExam") || LogQuery("JoinedStable", "TrainerExam")) {
+		InventoryAdd(Player, "HarnessPonyBits", "ItemMouth", false);
+		InventoryAdd(Player, "PonyBoots", "Shoes", false);
+		InventoryAdd(Player, "PonyBoots", "ItemBoots", false);
+	} else {
+		InventoryDelete(Player, "HarnessPonyBits", "ItemMouth", false);
+		InventoryDelete(Player, "PonyBoots", "Shoes", false);
+		InventoryDelete(Player, "PonyBoots", "ItemBoots", false);
+	}
+	ServerPlayerInventorySync();
 }
 
 // When the character logs, we analyze the data
@@ -165,6 +180,9 @@ function LoginResponse(C) {
 			Player.LabelColor = C.LabelColor;
 			Player.ItemPermission = C.ItemPermission;
 			Player.ChatSettings = C.ChatSettings;
+			Player.VisualSettings = C.VisualSettings;
+			Player.AudioSettings = C.AudioSettings;
+			Player.GameplaySettings = C.GameplaySettings;
 			Player.WhiteList = C.WhiteList;
 			Player.BlackList = C.BlackList;
 			Player.FriendList = C.FriendList;
@@ -176,7 +194,7 @@ function LoginResponse(C) {
 			ReputationLoad(C.Reputation);
 			SkillLoad(C.Skill);
 			CharacterLoadCSVDialog(Player);
-			PrivateCharacterMax = (LogQuery("Expansion", "PrivateRoom")) ? 8 : 4;
+			PrivateCharacterMax = 4 + (LogQuery("Expansion", "PrivateRoom") ? 4 : 0) + (LogQuery("SecondExpansion", "PrivateRoom") ? 4 : 0);
 			CharacterRefresh(Player, false);
 			ElementRemove("InputName");
 			ElementRemove("InputPassword");
@@ -196,6 +214,8 @@ function LoginResponse(C) {
 			if ((InventoryGet(Player, "ItemArms") != null) && (InventoryGet(Player, "ItemArms").Asset.Name == "FourLimbsShackles")) InventoryRemove(Player, "ItemArms");
 			LoginValidCollar();
 			LoginMistressItems();
+			LoginStableItems();
+			CharacterAppearanceValidate(Player);
 
 			// If the player must log back in the cell
 			if (LogQuery("Locked", "Cell")) {

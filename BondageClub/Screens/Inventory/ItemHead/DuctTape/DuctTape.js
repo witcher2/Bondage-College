@@ -53,18 +53,20 @@ function InventoryItemHeadDuctTapeSetType(NewType) {
 		DialogFocusItem.Property.Block = [];
 	}
 	else if (NewType == "Mummy") {
-        DialogFocusItem.Property.Hide = ["HairFront"];
+        DialogFocusItem.Property.Hide = ["HairFront", "HairBack"];
 	    DialogFocusItem.Property.Effect = ["GagNormal", "BlindNormal", "Prone"];
-		DialogFocusItem.Property.Block = ["ItemMouth", "ItemEars"];
+		DialogFocusItem.Property.Block = ["ItemMouth", "ItemMouth2", "ItemMouth3", "ItemEars"];
 	}
 
 	CharacterRefresh(C);
 	ChatRoomCharacterUpdate(C);
 
-	var msg = DialogFind(Player, "DuctTapeHeadSet" + ((NewType) ? NewType : "Double"));
-	msg = msg.replace("SourceCharacter", Player.Name);
-	msg = msg.replace("DestinationCharacter", C.Name);
-	ChatRoomPublishCustomAction(msg, true);
+	var msg = "DuctTapeHeadSet" + ((NewType) ? NewType : "Double");
+	var Dictionary = [];
+	Dictionary.push({Tag: "SourceCharacter", Text: Player.Name, MemberNumber: Player.MemberNumber});
+	Dictionary.push({Tag: "DestinationCharacter", Text: C.Name, MemberNumber: C.MemberNumber});
+	Dictionary.push({Tag: "TargetCharacter", Text: C.Name, MemberNumber: C.MemberNumber});
+	ChatRoomPublishCustomAction(msg, true, Dictionary);
 	if (DialogInventory != null) {
 		DialogFocusItem = null;
 		DialogMenuButtonBuild(C);

@@ -2,7 +2,6 @@
 var ChatAdminBackground = "Sheet";
 var ChatAdminMessage = "";
 var ChatAdminPrivate = false;
-var ChatAdminBackground = "";
 var ChatAdminBackgroundIndex = 0;
 var ChatAdminBackgroundSelect = "";
 var ChatAdminPrivate = false;
@@ -12,18 +11,21 @@ var ChatAdminLocked = false;
 function ChatAdminLoad() {
 
 	// If the current room background isn't valid, we pick the first one
-	ChatAdminBackground = ChatRoomData.Background;
+	ChatAdminBackgroundSelect = ChatRoomData.Background;
 	if (ChatCreateBackgroundList.indexOf(ChatAdminBackgroundSelect) < 0) {
 		ChatAdminBackgroundIndex = 0;
 		ChatAdminBackgroundSelect = ChatCreateBackgroundList[0];
-		ChatAdminBackground = ChatAdminBackgroundSelect + "Dark";
-	}
+	} else ChatAdminBackgroundIndex = ChatCreateBackgroundList.indexOf(ChatAdminBackgroundSelect);
 
 	// Prepares the controls to edit a room
 	ElementCreateInput("InputName", "text", ChatRoomData.Name, "20");
+	document.getElementById("InputName").setAttribute("autocomplete", "off");
+	ElementCreateInput("InputSize", "text", ChatRoomData.Limit.toString(), "2");
+	document.getElementById("InputSize").setAttribute("autocomplete", "off");
 	ElementCreateTextArea("InputDescription");
 	document.getElementById("InputDescription").setAttribute("maxLength", 100);
 	document.getElementById("InputDescription").setAttribute("autocomplete", "off");
+	ElementValue("InputDescription", ChatRoomData.Description);
 	ElementCreateTextArea("InputAdminList");
 	document.getElementById("InputAdminList").setAttribute("maxLength", 250);
 	document.getElementById("InputAdminList").setAttribute("autocomplete", "off");
@@ -32,10 +34,6 @@ function ChatAdminLoad() {
 	document.getElementById("InputBanList").setAttribute("maxLength", 250);
 	document.getElementById("InputBanList").setAttribute("autocomplete", "off");
 	ElementValue("InputBanList", CommonConvertArrayToString(ChatRoomData.Ban));
-	ElementValue("InputDescription", ChatRoomData.Description);
-	ElementCreateInput("InputSize", "text", "10", "2");
-	ElementValue("InputSize", ChatRoomData.Limit);
-	ChatAdminMessage = "";
 	ChatAdminPrivate = ChatRoomData.Private;
 	ChatAdminLocked = ChatRoomData.Locked;
 
@@ -46,7 +44,8 @@ function ChatAdminLoad() {
 		document.getElementById("InputAdminList").setAttribute("disabled", "disabled");
 		document.getElementById("InputBanList").setAttribute("disabled", "disabled");
 		document.getElementById("InputSize").setAttribute("disabled", "disabled");
-	}
+		ChatAdminMessage = "AdminOnly";
+	} else ChatAdminMessage = "UseMemberNumbers";
 
 }
 
@@ -54,39 +53,31 @@ function ChatAdminLoad() {
 function ChatAdminRun() {
 
 	// Draw the main controls
-	if (ChatAdminMessage == "") ChatAdminMessage = "EnterRoomInfo";
-	DrawText(TextGet(ChatAdminMessage), 1000, 60, "Black", "Gray");
-	DrawText(TextGet("RoomName"), 320, 150, "Black", "Gray");
-	ElementPosition("InputName", 320, 210, 450);
+	DrawText(TextGet(ChatAdminMessage), 650, 870, "Black", "Gray");
+	DrawText(TextGet("RoomName"), 535, 110, "Black", "Gray");
+	ElementPosition("InputName", 535, 170, 820);
+	DrawText(TextGet("RoomSize"), 1100, 110, "Black", "Gray");
+	ElementPosition("InputSize", 1100, 170, 250);
+	DrawText(TextGet("RoomDescription"), 675, 265, "Black", "Gray");
+	ElementPosition("InputDescription", 675, 380, 1100, 160);
+	DrawText(TextGet("RoomAdminList"), 390, 530, "Black", "Gray");
+	ElementPosition("InputAdminList", 390, 680, 530, 230);
+	DrawText(TextGet("RoomBanList"), 960, 530, "Black", "Gray");
+	ElementPosition("InputBanList", 960, 680, 530, 230);
 
 	// Background selection
-	DrawImageResize("Backgrounds/" + ChatAdminBackground + ".jpg", 1450, 100, 450, 300);
-	DrawText(TextGet("RoomBackground"), 1650, 420, "Black", "Gray");
-	DrawBackNextButton(1500, 450, 350, 65, ChatAdminBackgroundSelect, "White", null,
-		() => (ChatAdminBackgroundIndex == 0) ? ChatCreateBackgroundList[ChatCreateBackgroundList.length - 1] : ChatCreateBackgroundList[ChatAdminBackgroundIndex - 1],
-		() => (ChatAdminBackgroundIndex >= ChatCreateBackgroundList.length - 1) ? ChatCreateBackgroundList[0] : ChatCreateBackgroundList[ChatAdminBackgroundIndex + 1]);
-
-	// Description, room size, admin and ban lists
-	DrawText(TextGet("RoomDescription"), 320, 320, "Black", "Gray");
-	ElementPosition("InputDescription", 320, 480, 450, 250);
-	DrawText(TextGet("RoomBanList"), 1000, 150, "Black", "Gray");
-	ElementPosition("InputBanList", 1000, 310, 450, 250);
-	DrawText(TextGet("RoomAdminList"), 1000, 500, "Black", "Gray");
-	ElementPosition("InputAdminList", 1000, 660, 450, 250);
-	DrawText(TextGet("RoomSize"), 220, 700, "Black", "Gray");
-	ElementPosition("InputSize", 470, 700, 150);
+	DrawImageResize("Backgrounds/" + ChatAdminBackgroundSelect + "Dark.jpg", 1300, 75, 600, 400);
+	DrawBackNextButton(1350, 500, 500, 65, ChatAdminBackgroundSelect, ChatRoomPlayerIsAdmin() ? "White" : "#ebebe4", null, () => "", () => "");
 
 	// Private and Locked check boxes
-	DrawText(TextGet("RoomPrivate"), 1710, 640, "Black", "Gray");
-	DrawButton(1810, 590, 64, 64, "", "White", ChatAdminPrivate ? "Icons/Checked.png" : "");
-	DrawText(TextGet("RoomLocked"), 1710, 750, "Black", "Gray");
-	DrawButton(1810, 700, 64, 64, "", "White", ChatAdminLocked ? "Icons/Checked.png" : "");
+	DrawText(TextGet("RoomPrivate"), 1514, 640, "Black", "Gray");
+	DrawButton(1686, 608, 64, 64, "", ChatRoomPlayerIsAdmin() ? "White" : "#ebebe4", ChatAdminPrivate ? "Icons/Checked.png" : "");
+	DrawText(TextGet("RoomLocked"), 1514, 740, "Black", "Gray");
+	DrawButton(1686, 708, 64, 64, "", ChatRoomPlayerIsAdmin() ? "White" : "#ebebe4", ChatAdminLocked ? "Icons/Checked.png" : "");
 	
 	// Save & Cancel/Exit buttons + help text
-	if (ChatRoomPlayerIsAdmin()) DrawButton(200, 840, 300, 65, TextGet("Save"), "White");
-	DrawButton(1600, 840, 300, 65, TextGet(ChatRoomPlayerIsAdmin() ? "Cancel" : "Exit"), "White");
-	DrawText(TextGet("ListDesciption"), 1000, 840, "Black", "Gray");
-	DrawText(TextGet("ListExample"), 1000, 900, "Black", "Gray");
+	DrawButton(1325, 840, 250, 65, TextGet("Save"), ChatRoomPlayerIsAdmin() ? "White" : "#ebebe4");
+	DrawButton(1625, 840, 250, 65, TextGet(ChatRoomPlayerIsAdmin() ? "Cancel" : "Exit"), "White");
 
 }
 
@@ -94,24 +85,23 @@ function ChatAdminRun() {
 function ChatAdminClick() {
 
 	// When the user cancels/exits
-	if ((MouseX >= 1600) && (MouseX < 1900) && (MouseY >= 840) && (MouseY < 905)) ChatAdminExit();
+	if ((MouseX >= 1625) && (MouseX < 1875) && (MouseY >= 840) && (MouseY < 905)) ChatAdminExit();
 
 	// All other controls are for administrators only
 	if (ChatRoomPlayerIsAdmin()) {
 
 		// When we select a new background
-		if ((MouseX >= 1500) && (MouseX < 1850) && (MouseY >= 450) && (MouseY < 515)) {
-			ChatAdminBackgroundIndex += ((MouseX < 1675 && !CommonIsMobile) ? -1 : 1);
+		if ((MouseX >= 1350) && (MouseX <= 1850) && (MouseY >= 500) && (MouseY <= 565)) {
+			ChatAdminBackgroundIndex += ((MouseX < 1600 && !CommonIsMobile) ? -1 : 1);
 			if (ChatAdminBackgroundIndex >= ChatCreateBackgroundList.length) ChatAdminBackgroundIndex = 0;
 			if (ChatAdminBackgroundIndex < 0) ChatAdminBackgroundIndex = ChatCreateBackgroundList.length - 1;
 			ChatAdminBackgroundSelect = ChatCreateBackgroundList[ChatAdminBackgroundIndex];
-			ChatAdminBackground = ChatAdminBackgroundSelect + "Dark";
 		}
 
 		// Private & Locked check boxes + save button
-		if ((MouseX >= 1810) && (MouseX <= 1874) && (MouseY >= 590) && (MouseY <= 654)) ChatAdminPrivate = !ChatAdminPrivate;
-		if ((MouseX >= 1810) && (MouseX <= 1874) && (MouseY >= 700) && (MouseY <= 64)) ChatAdminLocked = !ChatAdminLocked;
-		if ((MouseX >= 200) && (MouseX < 500) && (MouseY >= 840) && (MouseY < 905) && ChatRoomPlayerIsAdmin()) ChatAdminUpdateRoom();
+		if ((MouseX >= 1686) && (MouseX <= 1750) && (MouseY >= 608) && (MouseY <= 672)) ChatAdminPrivate = !ChatAdminPrivate;
+		if ((MouseX >= 1686) && (MouseX <= 1750) && (MouseY >= 708) && (MouseY <= 772)) ChatAdminLocked = !ChatAdminLocked;
+		if ((MouseX >= 1325) && (MouseX < 1575) && (MouseY >= 840) && (MouseY < 905) && ChatRoomPlayerIsAdmin()) ChatAdminUpdateRoom();
 
 	}
 
@@ -141,7 +131,7 @@ function ChatAdminUpdateRoom() {
 		Description: ElementValue("InputDescription").trim(),
 		Background: ChatAdminBackgroundSelect,
 		Limit: ElementValue("InputSize").trim(),
-		Admin: CommonConvertListToArray(ElementValue("InputAdminList").trim()),
+		Admin: CommonConvertStringToArray(ElementValue("InputAdminList").trim()),
 		Ban: CommonConvertStringToArray(ElementValue("InputBanList").trim()),
 		Private: ChatAdminPrivate,
 		Locked: ChatAdminLocked

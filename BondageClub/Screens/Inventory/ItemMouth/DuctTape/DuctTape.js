@@ -2,7 +2,7 @@
 
 // Loads the item extension properties
 function InventoryItemMouthDuctTapeLoad() {
-	if (DialogFocusItem.Property == null) DialogFocusItem.Property = { Type: null, Effect: ["GagLight"] };
+	if (DialogFocusItem.Property == null) DialogFocusItem.Property = { Type: null, Effect: ["GagVeryLight"] };
 }
 
 // Draw the item extension screen
@@ -50,16 +50,17 @@ function InventoryItemMouthDuctTapeSetType(NewType) {
 		InventoryItemMouthDuctTapeLoad();
 	}
 	DialogFocusItem.Property.Type = NewType;
-	if (NewType == null) DialogFocusItem.Property.Effect = ["GagLight"];
-	else if (NewType == "Crossed") DialogFocusItem.Property.Effect = ["GagLight"];
-	else if (NewType == "Full") DialogFocusItem.Property.Effect = ["GagNormal"];
-	else if (NewType == "Double") DialogFocusItem.Property.Effect = ["GagNormal"];
+	if (NewType == null) DialogFocusItem.Property.Effect = ["GagVeryLight"];
+	else if (NewType == "Crossed") DialogFocusItem.Property.Effect = ["GagVeryLight"];
+	else if (NewType == "Full") DialogFocusItem.Property.Effect = ["GagLight"];
+	else if (NewType == "Double") DialogFocusItem.Property.Effect = ["GagEasy"];
 	else if (NewType == "Cover") DialogFocusItem.Property.Effect = ["GagNormal"];
 	CharacterRefresh(C);
-	var msg = DialogFind(Player, "DuctTapeMouthSet" + ((NewType) ? NewType : "Small"));
-	msg = msg.replace("SourceCharacter", Player.Name);
-	msg = msg.replace("DestinationCharacter", C.Name);
-	ChatRoomPublishCustomAction(msg, true);
+	var msg = "DuctTapeMouthSet" + ((NewType) ? NewType : "Small");
+	var Dictionary = [];
+	Dictionary.push({Tag: "SourceCharacter", Text: Player.Name, MemberNumber: Player.MemberNumber});
+	Dictionary.push({Tag: "DestinationCharacter", Text: C.Name, MemberNumber: C.MemberNumber});
+	ChatRoomPublishCustomAction(msg, true, Dictionary);
 	if (DialogInventory != null) {
 		DialogFocusItem = null;
 		DialogMenuButtonBuild(C);

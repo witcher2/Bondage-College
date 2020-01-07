@@ -113,6 +113,14 @@ function CommonReadCSV(Array, Path, Screen, File) {
 			window[Array] = CommonCSVCache[FullPath];
 		}
 	});
+
+	// If a translation file is available, we open the txt file and keep it in cache
+	var TranslationPath = FullPath.replace(".csv", "_" + TranslationLanguage + ".txt");
+	if (TranslationAvailable(TranslationPath))
+		CommonGet(TranslationPath, function() {
+			if (this.status == 200) TranslationCache[TranslationPath] = TranslationParseTXT(this.responseText);
+		});
+
 }
 
 // AJAX utility to get a file and return it's content
@@ -239,9 +247,9 @@ function CommonConvertStringToArray(s) {
 // Converts an array of numbers to a string, separated with ","
 function CommonConvertArrayToString(Arr) {
 	var S = "";
-	for (var P = 0; P < Arr.Length; P++) {
+	for (var P = 0; P < Arr.length; P++) {
 		if (P != 0) S = S + ",";
-		S = S + Arr[P].toString;
+		S = S + Arr[P].toString();
 	}
 	return S;
 }

@@ -31,16 +31,14 @@ function ChatRoomCurrentCharacterIsAdmin() { return ((CurrentCharacter != null) 
 // Creates the chat room input elements
 function ChatRoomCreateElement() {
 	if (document.getElementById("InputChat") == null) {
-		ElementCreateTextArea("InputChat"); //switched to textarea for larger input field
+		ElementCreateTextArea("InputChat");
 		document.getElementById("InputChat").setAttribute("maxLength", 250);
 		document.getElementById("InputChat").setAttribute("autocomplete", "off");
 		ElementCreateDiv("TextAreaChatLog");
 		ElementPositionFix("TextAreaChatLog", 36, 1005, 5, 988, 859);
 		ElementContent("TextAreaChatLog", ChatRoomLog);
 		ElementScrollToEnd("TextAreaChatLog");
-		if (Player.ChatSettings)
-			for (var property in Player.ChatSettings)
-				ElementSetDataAttribute("TextAreaChatLog", property, Player.ChatSettings[property]);
+		ChatRoomRefreshChatSettings(Player);
 		ElementFocus("InputChat");
 	}
 }
@@ -91,7 +89,7 @@ function ChatRoomDrawCharacter(DoClick) {
 	for (var C = 0; C < ChatRoomCharacter.length; C++)
 		if (DoClick) {
 			if ((MouseX >= (C % 5) * Space + X) && (MouseX <= (C % 5) * Space + X + 450 * Zoom) && (MouseY >= Y + Math.floor(C / 5) * 500) && (MouseY <= Y + Math.floor(C / 5) * 500 + 1000 * Zoom)) {
-				if (MouseY <= Y + Math.floor(C / 5) * 500 + 900 * Zoom) {
+				if ((MouseY <= Y + Math.floor(C / 5) * 500 + 900 * Zoom) && (Player.GameplaySettings && Player.GameplaySettings.BlindDisableExamine ? (!(Player.Effect.indexOf("BlindHeavy") >= 0) || ChatRoomCharacter[C].ID == Player.ID): true)) {
 					ElementRemove("InputChat");
 					ElementRemove("TextAreaChatLog");
 					ChatRoomBackground = ChatRoomData.Background;
@@ -148,40 +146,42 @@ function ChatRoomRun() {
 	ChatRoomDrawCharacter(false);
 	ElementPositionFix("TextAreaChatLog", 36, 1005, 5, 988, 859);
 	ElementPosition("InputChat", 1405, 929, 798, 117);
-	DrawButton(1935, 870, 60, 60, "", "White", "Icons/Small/Preference.png");
 	DrawButton(1805, 870, 60, 60, "", "White", "Icons/Small/Chat.png");
+	DrawButton(1870, 870, 60, 60, "", "White", "Icons/Small/Character.png");
+	DrawButton(1935, 870, 60, 60, "", "White", "Icons/Small/Preference.png");
 	if (Player.CanKneel()) DrawButton(1805, 935, 60, 60, "", "White", "Icons/Small/Kneel.png");
 	if (Player.CanChange()) DrawButton(1870, 935, 60, 60, "", "White", "Icons/Small/Dress.png");
-	DrawButton(1870, 870, 60, 60, "", "White", "Icons/Small/Character.png");
-	if ((Player.CanWalk() && !ChatRoomData.Locked) || ChatRoomPlayerIsAdmin()) DrawButton(1935, 935, 60, 60, "", "White", "Icons/Small/Exit.png");
+	if (ChatRoomCanLeave()) DrawButton(1935, 935, 60, 60, "", "White", "Icons/Small/Exit.png");
 }
 
 // When the player clicks in the chat room
 function ChatRoomClick() {
-	
-	// When the user chats
+
+	// When the user chats or clicks on a character
 	if ((MouseX >= 0) && (MouseX < 1000) && (MouseY >= 0) && (MouseY < 1000)) ChatRoomDrawCharacter(true);
 	if ((MouseX >= 1805) && (MouseX < 1865) && (MouseY >= 875) && (MouseY < 935)) ChatRoomSendChat();
 
-	// Room Admin controls
-	//if ((MouseX >= 1805) && (MouseX < 1865) && (MouseY >= 870) && (MouseY < 935) &&  ChatRoomPlayerIsAdmin())  ServerSend("ChatRoomAdmin", { MemberNumber: Player.ID, Action: "Private" });
-	//if ((MouseX >= 1870) && (MouseX < 1930) && (MouseY >= 870) && (MouseY < 935) &&  ChatRoomPlayerIsAdmin() && Player.CanChange())  ServerSend("ChatRoomAdmin", { MemberNumber: Player.ID, Action: "Lock" });
-	if ((MouseX >= 1935) && (MouseX < 1995) && (MouseY >= 875) && (MouseY < 935)) {// for RoomAdmin Screen
-		//console.log('roomadmin')
+	// When the user checks her profile
+	if ((MouseX >= 1870) && (MouseX < 1930) && (MouseY >= 875) && (MouseY < 935)) {
 		ElementRemove("InputChat");
 		ElementRemove("TextAreaChatLog");
-		CharacterAppearanceReturnRoom = "ChatRoom"; 
-		CharacterAppearanceReturnModule = "Online";
+		InformationSheetLoadCharacter(Player);
+	}
+
+	// When the user enters the room administration screen
+	if ((MouseX >= 1935) && (MouseX < 1995) && (MouseY >= 875) && (MouseY < 935)) {
+		ElementRemove("InputChat");
+		ElementRemove("TextAreaChatLog");
 		CommonSetScreen("Online", "ChatAdmin");
 	}
-	
-	// When the player kneels
-	if ((MouseX >= 1805) && (MouseX < 1865) && (MouseY >= 935) && (MouseY < 995) && Player.CanKneel()) { 
-		ServerSend("ChatRoomChat", { Content: Player.Name + " " + TextGet((Player.ActivePose == null) ? "KneelDown": "StandUp"), Type: "Action" } );
+
+	// When the user character kneels
+	if ((MouseX >= 1805) && (MouseX < 1865) && (MouseY >= 935) && (MouseY < 995) && Player.CanKneel()) {
+		ServerSend("ChatRoomChat", { Content: (Player.ActivePose == null) ? "KneelDown": "StandUp", Type: "Action" , Dictionary: [{Tag: "SourceCharacter", Text: Player.Name, MemberNumber: Player.MemberNumber}]} );
 		CharacterSetActivePose(Player, (Player.ActivePose == null) ? "Kneel" : null);
 		ChatRoomCharacterUpdate(Player);
 	}
-	
+
 	// When the user wants to change clothes
 	if ((MouseX >= 1870) && (MouseX < 1930) && (MouseY >= 935) && (MouseY < 995) && Player.CanChange()) { 
 		ElementRemove("InputChat");
@@ -191,15 +191,8 @@ function ChatRoomClick() {
 		CharacterAppearanceLoadCharacter(Player);
 	}
 
-	// When the user checks her profile
-	if ((MouseX >= 1870) && (MouseX < 1930) && (MouseY >= 875) && (MouseY < 935)) {
-		ElementRemove("InputChat");
-		ElementRemove("TextAreaChatLog");
-		InformationSheetLoadCharacter(Player);
-	}
-
 	// When the user leaves
-	if ((MouseX >= 1935) && (MouseX < 1995) && (MouseY >= 935) && (MouseY < 995) && (((Player.CanWalk()) && !ChatRoomData.Locked) || ChatRoomPlayerIsAdmin())) {
+	if ((MouseX >= 1935) && (MouseX < 1995) && (MouseY >= 935) && (MouseY < 995) && ChatRoomCanLeave()) {
 		ElementRemove("InputChat");
 		ElementRemove("TextAreaChatLog");
 		ServerSend("ChatRoomLeave", "");
@@ -208,14 +201,24 @@ function ChatRoomClick() {
 
 }
 
+// Returns TRUE if the player can leave the current chat room
+function ChatRoomCanLeave() {
+	if (!Player.CanWalk()) return false; // Cannot leave if cannot walk
+	if (!ChatRoomData.Locked || ChatRoomPlayerIsAdmin()) return true; // Can leave if the room isn't locked or is an administrator
+	for (var C = 0; C < ChatRoomCharacter.length; C++)
+		if (ChatRoomData.Admin.indexOf(ChatRoomCharacter[C].MemberNumber) >= 0)
+			return false; // Cannot leave if the room is locked and there's an administrator inside
+	return true; // Can leave if the room is locked and there's no administrator inside
+}
+
 // Chat room keyboard shortcuts
 function ChatRoomKeyDown() {
 
-	// The ENTER key sends the chat
-	if (KeyPress == 13) {	
-		event.preventDefault(); //needed for <textarea> otherwise it always adds a new line after clearing the field
-		ChatRoomSendChat()
-	};
+	// The ENTER key sends the chat.  The "preventDefault" is needed for <textarea>, otherwise it adds a new line after clearing the field
+	if (KeyPress == 13) {
+		event.preventDefault();
+		ChatRoomSendChat();
+	}
 
 	// On page up, we show the previous chat typed
 	if (KeyPress == 33) {
@@ -242,6 +245,11 @@ function ChatRoomSendChat() {
 		// Keeps the chat log in memory so it can be accessed with pageup/pagedown
 		ChatRoomLastMessage.push(msg);
 		ChatRoomLastMessageIndex = ChatRoomLastMessage.length;
+
+		// Replace < and > characters to prevent HTML injections
+		while (msg.indexOf("<") > -1) msg = msg.replace("<", "&lt;");
+		while (msg.indexOf(">") > -1) msg = msg.replace(">", "&gt;");
+
 		var m = msg.toLowerCase().trim();
 		
 		// Some custom functions like /dice or /coin are implemented for randomness
@@ -250,20 +258,22 @@ function ChatRoomSendChat() {
 			// The player can roll a dice, if no size is specified, a 6 sided dice is assumed
 			var Dice = (isNaN(parseInt(msg.substring(5, 50).trim()))) ? 6 : parseInt(msg.substring(5, 50).trim());
 			if ((Dice < 4) || (Dice > 100)) Dice = 6;
-			msg = TextGet("ActionDice");
-			msg = msg.replace("SourceCharacter", Player.Name);
-			msg = msg.replace("DiceType", Dice.toString());
-			msg = msg.replace("DiceResult", (Math.floor(Math.random() * Dice) + 1).toString());
-			if (msg != "") ServerSend("ChatRoomChat", { Content: msg, Type: "Action" } );
+			msg = "ActionDice";
+			var Dictionary = [];
+			Dictionary.push({Tag: "SourceCharacter", Text: Player.Name});
+			Dictionary.push({Tag: "DiceType", Text: Dice.toString()});
+			Dictionary.push({Tag: "DiceResult", Text: (Math.floor(Math.random() * Dice) + 1).toString()});
+			if (msg != "") ServerSend("ChatRoomChat", { Content: msg, Type: "Action", Dictionary: Dictionary} );
 
 		} else if (m.indexOf("/coin") == 0) {
 
 			// The player can flip a coin, heads or tails are 50/50
-			msg = TextGet("ActionCoin");
+			msg = "ActionCoin";
 			var Heads = (Math.random() >= 0.5);
-			msg = msg.replace("SourceCharacter", Player.Name);
-			msg = msg.replace("CoinResult", Heads ? TextGet("Heads") : TextGet("Tails"));
-			if (msg != "") ServerSend("ChatRoomChat", { Content: msg, Type: "Action" } );
+			var Dictionary = [];
+			Dictionary.push({Tag: "SourceCharacter", Text: Player.Name});
+			Dictionary.push({Tag: "CoinResult", TextToLookUp: Heads ? "Heads" : "Tails"});
+			if (msg != "") ServerSend("ChatRoomChat", { Content: msg, Type: "Action", Dictionary: Dictionary} );
 
 		} else if ((m.indexOf("*") == 0) || (m.indexOf("/me ") == 0)) {
 
@@ -287,7 +297,7 @@ function ChatRoomSendChat() {
 		else {
 
 			// Regular chat can be garbled with a gag
-			msg = SpeechGarble(Player, msg);
+			//msg = SpeechGarble(Player, msg);
 			if ((msg != "") && (ChatRoomTargetMemberNumber == null)) ServerSend("ChatRoomChat", { Content: msg, Type: "Chat" } );
 
 			// The whispers get sent to the server and shown on the client directly
@@ -322,22 +332,23 @@ function ChatRoomPublishAction(C, DialogProgressPrevItem, DialogProgressNextItem
 
 		// Prepares the message
 		var msg = "";
-		if ((DialogProgressPrevItem != null) && (DialogProgressNextItem != null) && !DialogProgressNextItem.Asset.IsLock) msg = TextGet("ActionSwap");
-		else if ((DialogProgressPrevItem != null) && (DialogProgressNextItem != null) && DialogProgressNextItem.Asset.IsLock) msg = TextGet("ActionAddLock");
-		else if (InventoryItemHasEffect(DialogProgressNextItem, "Lock")) msg = TextGet("ActionLock");
-		else if (DialogProgressNextItem != null) msg = TextGet("ActionUse");
-		else if (InventoryItemHasEffect(DialogProgressPrevItem, "Lock")) msg = TextGet("ActionUnlock");
-		else msg = TextGet("ActionRemove");
+		var Dictionary = [];
+		if ((DialogProgressPrevItem != null) && (DialogProgressNextItem != null) && !DialogProgressNextItem.Asset.IsLock) msg = "ActionSwap";
+		else if ((DialogProgressPrevItem != null) && (DialogProgressNextItem != null) && DialogProgressNextItem.Asset.IsLock) msg = "ActionAddLock";
+		else if (InventoryItemHasEffect(DialogProgressNextItem, "Lock")) msg = "ActionLock";
+		else if (DialogProgressNextItem != null) msg = "ActionUse";
+		else if (InventoryItemHasEffect(DialogProgressPrevItem, "Lock")) msg = "ActionUnlock";
+		else msg = "ActionRemove";
 		
 		// Replaces the action tags to build the phrase
-		msg = msg.replace("SourceCharacter", Player.Name);
-		msg = msg.replace("DestinationCharacter", (C.ID == 0) ? TextGet("Her") : C.Name + TextGet("'s"));
-		if (DialogProgressPrevItem != null) msg = msg.replace("PrevAsset", DialogProgressPrevItem.Asset.DynamicDescription().toLowerCase());
-		if (DialogProgressNextItem != null) msg = msg.replace("NextAsset", DialogProgressNextItem.Asset.DynamicDescription().toLowerCase());
-		if (C.FocusGroup != null) msg = msg.replace("FocusAssetGroup", C.FocusGroup.Description.toLowerCase());
- 
+		Dictionary.push({Tag: "SourceCharacter", Text: Player.Name, MemberNumber: Player.MemberNumber});
+		Dictionary.push({Tag: "DestinationCharacter", Text: C.Name, MemberNumber: C.MemberNumber});
+		if (DialogProgressPrevItem != null) Dictionary.push({Tag: "PrevAsset", AssetName: DialogProgressPrevItem.Asset.Name});
+		if (DialogProgressNextItem != null) Dictionary.push({Tag: "NextAsset", AssetName: DialogProgressNextItem.Asset.Name});
+		if (C.FocusGroup != null) Dictionary.push({ Tag: "FocusAssetGroup", AssetGroupName: C.FocusGroup.Name});
+
 		// Sends the result to the server and leaves the dialog if we need to
-		ServerSend("ChatRoomChat", { Content: msg, Type: "Action" } );
+		ServerSend("ChatRoomChat", { Content: msg, Type: "Action", Dictionary: Dictionary} );
 		ChatRoomCharacterUpdate(C);
 		if (LeaveDialog && (CurrentCharacter != null)) DialogLeave();
 
@@ -345,9 +356,9 @@ function ChatRoomPublishAction(C, DialogProgressPrevItem, DialogProgressNextItem
 }
 
 // Publishes a custom action to the chat
-function ChatRoomPublishCustomAction(msg, LeaveDialog) {
+function ChatRoomPublishCustomAction(msg, LeaveDialog, Dictionary) {
 	if (CurrentScreen == "ChatRoom") {
-		ServerSend("ChatRoomChat", { Content: msg, Type: "Action" } );
+		ServerSend("ChatRoomChat", { Content: msg, Type: "Action", Dictionary: Dictionary} );
 		ChatRoomCharacterUpdate(CurrentCharacter);
 		if (LeaveDialog && (CurrentCharacter != null)) DialogLeave();
 	}
@@ -397,17 +408,54 @@ function ChatRoomMessage(data) {
 
 			// [Temporary?] Checks if the message is a notification about the user entering or leaving the room
 			var enterLeave = "";
-			if ((data.Type == "Action") && (msg.startsWith(SenderCharacter.Name + " entered.") || msg.startsWith(SenderCharacter.Name + " left.") || msg.startsWith(SenderCharacter.Name + " disconnected.") || msg.startsWith(SenderCharacter.Name + " was banned by ") || msg.startsWith(SenderCharacter.Name + " was kicked-out by "))) {
+			if ((data.Type == "Action") && (msg.startsWith("ServerEnter")) || (msg.startsWith("ServerLeave")) || (msg.startsWith("ServerDisconnect")) || (msg.startsWith("ServerBan")) || (msg.startsWith("ServerKick"))) {
 				enterLeave = " ChatMessageEnterLeave";
 			}
 
+			// Replace actions by the content of the dictionary
+			if (data.Type && (data.Type == "Action")) {
+				msg = DialogFind(Player, msg);
+				if (data.Dictionary) {
+					var dictionary = data.Dictionary;
+					for (var D = 0; D < dictionary.length; D++) {
+						if (dictionary[D].MemberNumber) {
+							if ((dictionary[D].Tag == "DestinationCharacter") || (dictionary[D].Tag == "DestinationCharacterName")) msg = msg.replace(dictionary[D].Tag, ((SenderCharacter.MemberNumber == dictionary[D].MemberNumber) && (dictionary[D].Tag == "DestinationCharacter")) ? DialogFind(Player, "Her") :
+								(PreferenceIsPlayerInSensDep() && dictionary[D].MemberNumber != Player.MemberNumber ? DialogFind(Player, "Someone").toLowerCase() : dictionary[D].Text + DialogFind(Player, "'s")));
+							else if ((dictionary[D].Tag == "TargetCharacter") || (dictionary[D].Tag == "TargetCharacterName")) msg = msg.replace(dictionary[D].Tag, ((SenderCharacter.MemberNumber == dictionary[D].MemberNumber) && (dictionary[D].Tag == "TargetCharacter")) ? DialogFind(Player, "Herself") :
+								(PreferenceIsPlayerInSensDep() && dictionary[D].MemberNumber != Player.MemberNumber ? DialogFind(Player, "Someone").toLowerCase() : dictionary[D].Text));
+							else if (dictionary[D].Tag == "SourceCharacter") msg = msg.replace(dictionary[D].Tag, (PreferenceIsPlayerInSensDep() && (dictionary[D].MemberNumber != Player.MemberNumber)) ? DialogFind(Player, "Someone") : dictionary[D].Text);
+						}
+						else if (dictionary[D].TextToLookUp) msg = msg.replace(dictionary[D].Tag, DialogFind(Player, dictionary[D].TextToLookUp).toLowerCase());
+						else if (dictionary[D].AssetName) {
+							for (var A = 0; A < Asset.length; A++)
+								if (Asset[A].Name == dictionary[D].AssetName)
+									msg = msg.replace(dictionary[D].Tag, Asset[A].DynamicDescription().toLowerCase());
+						}
+						else if (dictionary[D].AssetGroupName) {
+							for (var A = 0; A < AssetGroup.length; A++)
+								if (AssetGroup[A].Name == dictionary[D].AssetGroupName)
+									msg = msg.replace(dictionary[D].Tag, AssetGroup[A].Description.toLowerCase());
+						}
+						else msg = msg.replace(dictionary[D].Tag, dictionary[D].Text);
+					}
+				}
+			}
+
 			// Builds the message to add depending on the type
-			if ((data.Type != null) && (data.Type == "Chat") && Player.IsDeaf()) msg = '<span class="ChatMessageName" style="color:' + (SenderCharacter.LabelColor || 'gray') + ';">' + SenderCharacter.Name + ':</span> ' + SpeechGarble(SenderCharacter, msg);
-			if ((data.Type != null) && (data.Type == "Chat") && !Player.IsDeaf()) msg = '<span class="ChatMessageName" style="color:' + (SenderCharacter.LabelColor || 'gray') + ';">' + SenderCharacter.Name + ':</span> ' + msg;
-			if ((data.Type != null) && (data.Type == "Whisper")) msg = '<span class="ChatMessageName" style="font-style: italic; color:' + (SenderCharacter.LabelColor || 'gray') + ';">' + SenderCharacter.Name + ':</span> ' + msg;
-			if ((data.Type != null) && (data.Type == "Emote")) msg = "*" + SenderCharacter.Name + " " + msg + "*";
-			if ((data.Type != null) && (data.Type == "Action")) msg = "(" + msg + ")";
-			if ((data.Type != null) && (data.Type == "ServerMessage")) msg = "<b>" + DialogFind(Player, "ServerMessage" + msg).replace("SourceCharacter", SenderCharacter.Name) + "</b>";
+			if (data.Type != null) {
+				if (data.Type == "Chat"){
+					if (PreferenceIsPlayerInSensDep() && SenderCharacter.MemberNumber != Player.MemberNumber) msg = '<span class="ChatMessageName" style="color:' + (SenderCharacter.LabelColor || 'gray') + ';">' + SpeechGarble(SenderCharacter, SenderCharacter.Name) + ':</span> ' + SpeechGarble(SenderCharacter, msg);
+					else if (Player.IsDeaf()) msg = '<span class="ChatMessageName" style="color:' + (SenderCharacter.LabelColor || 'gray') + ';">' + SenderCharacter.Name + ':</span> ' + SpeechGarble(SenderCharacter, msg);
+					else msg = '<span class="ChatMessageName" style="color:' + (SenderCharacter.LabelColor || 'gray') + ';">' + SenderCharacter.Name + ':</span> ' + SpeechGarble(SenderCharacter, msg);
+				}
+				else if (data.Type == "Whisper") msg = '<span class="ChatMessageName" style="font-style: italic; color:' + (SenderCharacter.LabelColor || 'gray') + ';">' + SenderCharacter.Name + ':</span> ' + msg;
+				else if (data.Type == "Emote") {
+					if (PreferenceIsPlayerInSensDep() && SenderCharacter.MemberNumber != Player.MemberNumber) msg = "*" + DialogFind(Player, "Someone") + " " + msg + "*";
+					else msg = "*" + SenderCharacter.Name + " " + msg + "*";
+				}
+				else if (data.Type == "Action") msg = "(" + msg + ")";
+				else if (data.Type == "ServerMessage") msg = "<b>" + DialogFind(Player, "ServerMessage" + msg).replace("SourceCharacter", SenderCharacter.Name) + "</b>";
+			}
 
 			// Adds the message and scrolls down unless the user has scrolled up
 			var ShouldScrollDown = ElementIsScrolledToEnd("TextAreaChatLog");
@@ -449,6 +497,22 @@ function ChatRoomSync(data) {
 	}
 }
 
+// Refreshes the chat log element
+function ChatRoomRefreshChatSettings(C) {
+	if (C.ChatSettings) {
+		for (var property in C.ChatSettings)
+			ElementSetDataAttribute("TextAreaChatLog", property, C.ChatSettings[property]);
+		if (C.GameplaySettings && (C.GameplaySettings.SensDepChatLog == "SensDepNames" || C.GameplaySettings.SensDepChatLog == "SensDepTotal") && (C.Effect.indexOf("DeafHeavy") >= 0) && (C.Effect.indexOf("BlindHeavy") >= 0)) ElementSetDataAttribute("TextAreaChatLog", "EnterLeave", "Hidden");
+		if (C.GameplaySettings && (C.GameplaySettings.SensDepChatLog == "SensDepTotal") && (C.Effect.indexOf("DeafHeavy") >= 0) && (C.Effect.indexOf("BlindHeavy") >= 0)) {
+			ElementSetDataAttribute("TextAreaChatLog", "DisplayTimestamps", "false");
+			ElementSetDataAttribute("TextAreaChatLog", "ColorNames", "false");
+			ElementSetDataAttribute("TextAreaChatLog", "ColorActions", "false");
+			ElementSetDataAttribute("TextAreaChatLog", "ColorEmotes", "false");
+			ElementSetDataAttribute("TextAreaChatLog", "MemberNumbers", "Never");
+		}
+	}
+}
+
 // If we must show the character profile (information sheet)
 function ChatRoomViewProfile() {
 	if (CurrentCharacter != null) {
@@ -459,10 +523,16 @@ function ChatRoomViewProfile() {
 }
 
 // Sends an administrative command to the server for the chat room from the character dialog
-function ChatRoomAdminAction(ActionType) {
+function ChatRoomAdminAction(ActionType, Publish) {
 	if ((CurrentCharacter != null) && (CurrentCharacter.MemberNumber != null) && ChatRoomPlayerIsAdmin()) {
-		ServerSend("ChatRoomAdmin", { MemberNumber: CurrentCharacter.MemberNumber, Action: ActionType });
-		DialogLeave();
+		ServerSend("ChatRoomAdmin", { MemberNumber: CurrentCharacter.MemberNumber, Action: ActionType, Publish: ((Publish == null) || (Publish != "false")) });
+		if ((ActionType == "MoveLeft") || (ActionType == "MoveRight")) {
+			var Pos = ChatRoomCharacter.indexOf(CurrentCharacter);
+			if (ActionType == "MoveRight") Pos = Pos + 2;
+			if (Pos < 1) Pos = 1;
+			if (Pos > ChatRoomCharacter.length) Pos = ChatRoomCharacter.length;
+			CurrentCharacter.CurrentDialog = CurrentCharacter.CurrentDialog.replace("CharacterPosition", Pos.toString());
+		} else DialogLeave();
 	}
 }
 
@@ -575,6 +645,11 @@ function ChatRoomSetRule(data) {
 		if (data.Content == "OwnerRuleKeyAllow") LogDelete("BlockKey", "OwnerRule");
 		if (data.Content == "OwnerRuleKeyConfiscate") InventoryConfiscateKey();
 		if (data.Content == "OwnerRuleKeyBlock") LogAdd("BlockKey", "OwnerRule");
+
+		// Remote rules
+		if (data.Content == "OwnerRuleRemoteAllow") LogDelete("BlockRemote", "OwnerRule");
+		if (data.Content == "OwnerRuleRemoteConfiscate") InventoryConfiscateRemote();
+		if (data.Content == "OwnerRuleRemoteBlock") LogAdd("BlockRemote", "OwnerRule");
 
 		// Timer cell punishment
 		var TimerCell = 0;

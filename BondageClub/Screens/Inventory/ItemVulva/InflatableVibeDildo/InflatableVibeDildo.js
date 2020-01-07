@@ -5,7 +5,7 @@ function InventoryItemVulvaInflatableVibeDildoLoad() {
 	if (DialogFocusItem.Property == null) DialogFocusItem.Property = { InflateLevel: 0 };
 	if (DialogFocusItem.Property.InflateLevel == null) DialogFocusItem.Property.InflateLevel = 0;
 	if (DialogFocusItem.Property == null) DialogFocusItem.Property = { Intensity: -1 };
-	if (DialogFocusItem.Property.Intensity == null) DialogFocusItem.Property.Intensity = 0;
+	if (DialogFocusItem.Property.Intensity == null) DialogFocusItem.Property.Intensity = -1;
 }
 
 // Draw the item extension screen
@@ -68,7 +68,10 @@ function InventoryItemVulvaInflatableVibeDildoInflation(Modifier) {
 	if (DialogFocusItem.Property.InflateLevel == 4);
 	if (C.ID == 0) ServerPlayerAppearanceSync();
 	ChatRoomCharacterUpdate(C);
-    ChatRoomPublishCustomAction((DialogFind(Player, "InflVibeDildo_Pump" + ((Modifier > 0) ? "pumps" : "deflates") + "To" + DialogFocusItem.Property.InflateLevel)).replace("SourceCharacter",Player.Name).replace("DestinationCharacter",C.Name), true);
+	var Dictionary = [];
+	Dictionary.push({Tag: "DestinationCharacter", Text: C.Name, MemberNumber: C.MemberNumber});
+	Dictionary.push({Tag: "SourceCharacter", Text: Player.Name, MemberNumber: Player.MemberNumber});
+    ChatRoomPublishCustomAction("InflVibeDildo_Pump" + ((Modifier > 0) ? "pumps" : "deflates") + "To" + DialogFocusItem.Property.InflateLevel, true, Dictionary);
 
 }
 
@@ -83,6 +86,6 @@ function InventoryItemVulvaInflatableVibeDildoSetIntensity(Modifier) {
 	if (DialogFocusItem.Property.Intensity == 3) DialogFocusItem.Property.Effect = ["Egged", "Vibrating"];	
 	CharacterLoadEffect(C);
 	if (C.ID == 0) ServerPlayerAppearanceSync();
-	
-	ChatRoomPublishCustomAction((DialogFind(Player, "InflVibeDildo_Vibe" + ((Modifier > 0) ? "Increase" : "Decrease") + "To" + DialogFocusItem.Property.Intensity)).replace("DestinationCharacter",C.Name), true);
+
+	ChatRoomPublishCustomAction("InflVibeDildo_Vibe" + ((Modifier > 0) ? "Increase" : "Decrease") + "To" + DialogFocusItem.Property.Intensity, true, [{Tag: "DestinationCharacterName", Text: C.Name, MemberNumber: C.MemberNumber}]);
 }

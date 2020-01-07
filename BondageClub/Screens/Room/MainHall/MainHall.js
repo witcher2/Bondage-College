@@ -7,6 +7,8 @@ var MainHallMaid = null;
 var MainHallIsMaid = false;
 var MainHallIsHeadMaid = false;
 var MainHallHasOwnerLock = false;
+var MainHallHasSlaveCollar = false;
+var MainHallTip = 0;
 
 // Returns TRUE if a dialog option is available
 function MainHallCanTrickMaid() { return (ManagementIsClubSlave() && SarahUnlockQuest) }
@@ -23,6 +25,11 @@ function MainHallLoad() {
 	MainHallIsMaid = LogQuery("JoinedSorority", "Maid");
 	MainHallIsHeadMaid = LogQuery("LeadSorority", "Maid");
 	MainHallHasOwnerLock = InventoryCharacterHasOwnerOnlyRestraint(Player);
+	for (var A = 0; A < Player.Appearance.length; A++)
+		if (Player.Appearance[A].Asset.Name == "SlaveCollar")
+			if (Player.Appearance[A].Property)
+				MainHallHasSlaveCollar = true;
+	MainHallTip = Math.floor(Math.random() * 20);
 	CommonReadCSV("NoArravVar", "Room", "Management", "Dialog_NPC_Management_RandomGirl");
 	CommonReadCSV("NoArravVar", "Room", "KidnapLeague", "Dialog_NPC_KidnapLeague_RandomKidnapper");
 	CommonReadCSV("NoArravVar", "Room", "Private", "Dialog_NPC_Private_Custom");
@@ -57,6 +64,9 @@ function MainHallRun() {
 
 	// Draws the character and main hall buttons
 	DrawCharacter(Player, 750, 0, 1);
+	MainCanvas.font = "italic 30px Arial";	
+	DrawTextWrap(TextGet("Tip" + MainHallTip), 100, 800, 500, 200, "White");
+	MainCanvas.font = "36px Arial";	
 	
 	// Char, Dressing, Exit & Chat
 	DrawButton(1645, 25, 90, 90, "", "White", "Icons/Character.png", TextGet("Profile"));
@@ -100,6 +110,8 @@ function MainHallRun() {
 		DrawButton(145, 145, 90, 90, "", "White", "Icons/Magic.png", TextGet("Magic"));
 		DrawButton(25, 145, 90, 90, "", "White", "Icons/Horse.png", TextGet("Stable"));
 
+		// Cafe
+		DrawButton(25, 265, 90, 90, "", "White", "Icons/Refreshsments.png", TextGet("Cafe"));
 	}
 
 	// Check if there's a new maid rescue event to trigger
@@ -175,7 +187,7 @@ function MainHallClick() {
 		ChatRoomSpace = "";
 		ChatSearchBackground = "IntroductionDark";
 		ChatSearchLeaveRoom = "MainHall";
-		ChatCreateBackgroundList = ["Introduction", "KidnapLeague", "MaidQuarters", "MainHall", "Management", "Private", "Shibari", "Bedroom", "HorseStable", "Nursery", "PrisonHall", "BDSMRoomBlue", "BDSMRoomPurple", "BDSMRoomRed", "Gardens", "IndoorPool", "OutdoorPool", "MaidCafe", "PublicBath", "ParkDay", "ParkNight", "ChillRoom", "Boudoir", "BondageBedChamber", "Beach", "ForestPath", "DeepForest", "SpookyForest", "AbandonedBuilding", "BalconyNight", "CozyLivingRoom", "RooftopParty"];
+		ChatCreateBackgroundList = ["Introduction", "KidnapLeague", "MaidQuarters", "MainHall", "Management", "Private", "Shibari", "Bedroom", "HorseStable", "Nursery", "PrisonHall", "BDSMRoomBlue", "BDSMRoomPurple", "BDSMRoomRed", "Gardens", "IndoorPool", "OutdoorPool", "MaidCafe", "PublicBath", "ParkDay", "ParkNight", "ChillRoom", "Boudoir", "BondageBedChamber", "Beach", "ForestPath", "DeepForest", "SpookyForest", "AbandonedBuilding", "BalconyNight", "CozyLivingRoom", "RooftopParty", "CosyChalet", "ParkWinter", "XmasEve", "XmasDay", "StreetNight", "SnowyStreet"];
 		CommonSetScreen("Online", "ChatSearch");
 	}
 
@@ -215,6 +227,8 @@ function MainHallClick() {
 		if ((MouseX >=  145) && (MouseX <  235) && (MouseY >= 145) && (MouseY < 235)) MainHallWalk("Magic");
 		if ((MouseX >=  265) && (MouseX <  355) && (MouseY >= 145) && (MouseY < 235)) MainHallWalk("Nursery");
 
+		// Cafe
+		if ((MouseX >=   25) && (MouseX <  115) && (MouseY >= 265) && (MouseY < 355)) MainHallWalk("Cafe");
 	}
 
 }
@@ -252,12 +266,28 @@ function MainHallFreeSarah() {
 	DialogLeave();
 }
 
-// When the maid unlocks the player from an owner, she get forced naked for an hour and loses reputation
+// When the maid unlocks the player from an owner
 function MainHallMaidShamePlayer() {
 	CharacterRelease(Player);
-	CharacterNaked(Player);
 	MainHallHasOwnerLock = false;
-	LogAdd("BlockChange", "Rule", CurrentTime + 3600000);
+	MainHallMaidPunishmentPlayer();
+}
+
+// When the maid changes the slave collar model to default
+function MainHallMaidChangeCollarPlayer() {
+	for (var A = 0; A < Player.Appearance.length; A++)
+		if (Player.Appearance[A].Asset.Name == "SlaveCollar") {
+			Player.Appearance[A].Property = null;
+			Player.Appearance[A].Color = "Default";
+		}
+	MainHallHasSlaveCollar = false;
+	MainHallMaidPunishmentPlayer();
+}
+
+// When the maid punishes the player, she get forced naked for an hour and loses reputation
+function MainHallMaidPunishmentPlayer() {
+	CharacterNaked(Player);
+	LogAdd("BlockChange","Rule", CurrentTime + 3600000);
 	if (ReputationGet("Dominant") > 10) ReputationProgress("Dominant", -10);
 	if (ReputationGet("Dominant") < -10) ReputationProgress("Dominant", 10);
 }
