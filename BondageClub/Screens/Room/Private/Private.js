@@ -563,7 +563,7 @@ function PrivateActivityRun(LoveFactor) {
 	if ((PrivateActivity == "FullRestrain") && (NPCTraitGet(CurrentCharacter, "Serious") > 0)) CharacterFullRandomRestrain(Player, "Lot");
 	if (PrivateActivity == "FullRestrainOther") CharacterFullRandomRestrain(PrivateActivityTarget);
 	if (PrivateActivity == "Release") CharacterRelease(Player);
-	if (PrivateActivity == "Ungag") { InventoryRemove(Player, "ItemMouth"); InventoryRemove(Player, "ItemHead"); }
+	if (PrivateActivity == "Ungag") { InventoryRemove(Player, "ItemMouth"); InventoryRemove(Player, "ItemMouth2"); InventoryRemove(Player, "ItemMouth3"); InventoryRemove(Player, "ItemHead"); }
 	if (PrivateActivity == "Naked") CharacterNaked(Player);
 	if (PrivateActivity == "Underwear") CharacterRandomUnderwear(Player);
 	if (PrivateActivity == "RandomClothes") CharacterAppearanceFullRandom(Player, true);
@@ -583,10 +583,8 @@ function PrivateActivityRun(LoveFactor) {
 	if (PrivateActivity == "Shibari") {
 		CharacterNaked(Player);
 		CharacterSetActivePose(Player, null);
-		InventoryWear(Player, "HempRope", "ItemArms", "Default", Math.floor(Math.random() * 10) + 1);
-		InventoryWear(Player, "HempRope", "ItemLegs", "Default", Math.floor(Math.random() * 10) + 1);
-		InventoryWear(Player, "SuspensionHempRope", "ItemFeet", "Default", Math.floor(Math.random() * 10) + 1);
-		InventoryWear(Player, "HempRopeHarness", "ItemTorso", "Default", Math.floor(Math.random() * 10) + 1);
+		InventoryRemove(Player, "ItemHead");
+		ShibariRandomBondage(Player, 3);
 		InventoryWearRandom(Player, "ItemMouth");
 		PrivateReleaseTimer = CommonTime() + (Math.random() * 60000) + 60000;
 	}

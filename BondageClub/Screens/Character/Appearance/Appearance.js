@@ -270,6 +270,19 @@ function CharacterAppearanceBuildCanvas(C) {
 				if ((CA.Property && CA.Property.Expression && CA.Asset.Group.AllowExpression.indexOf(CA.Property.Expression) >= 0))
 					Expression = CA.Property.Expression + "/";
 
+			// Find the X and Y position to draw on
+			var X = CA.Asset.Group.DrawingLeft;
+			var Y = CA.Asset.Group.DrawingTop;
+			if (C.Pose != null)
+				for (var CP = 0; CP < C.Pose.length; CP++)
+					for (var P = 0; P < PoseFemale3DCG.length; P++)
+						if ((C.Pose[CP] == PoseFemale3DCG[P].Name) && (PoseFemale3DCG[P].MovePosition != null))
+							for (var M = 0; M < PoseFemale3DCG[P].MovePosition.length; M++)
+								if (PoseFemale3DCG[P].MovePosition[M].Group == CA.Asset.Group.Name) {
+									X = X + PoseFemale3DCG[P].MovePosition[M].X;
+									Y = Y + PoseFemale3DCG[P].MovePosition[M].Y;
+								}
+
 			// Check if we need to draw a different variation (from type property)
 			var Type = "";
 			if ((CA.Property != null) && (CA.Property.Type != null)) Type = CA.Property.Type;
@@ -302,19 +315,19 @@ function CharacterAppearanceBuildCanvas(C) {
 
 				// Draw the item on the canvas (default or empty means no special color, # means apply a color, regular text means we apply that text)
 				if ((CA.Color != null) && (CA.Color.indexOf("#") == 0) && ((CA.Asset.Layer == null) || CA.Asset.Layer[L].AllowColorize)) {
-					DrawImageCanvasColorize("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + Expression + CA.Asset.Name + G + LayerType + Layer + ".png", C.Canvas.getContext("2d"), CA.Asset.Group.DrawingLeft, CA.Asset.Group.DrawingTop, 1, CA.Color, CA.Asset.Group.DrawingFullAlpha);
-					DrawImageCanvasColorize("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + (CA.Asset.Group.DrawingBlink ? "Closed/" : Expression) + CA.Asset.Name + G + LayerType + Layer + ".png", C.CanvasBlink.getContext("2d"), CA.Asset.Group.DrawingLeft, CA.Asset.Group.DrawingTop, 1, CA.Color, CA.Asset.Group.DrawingFullAlpha);
+					DrawImageCanvasColorize("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + Expression + CA.Asset.Name + G + LayerType + Layer + ".png", C.Canvas.getContext("2d"), X, Y, 1, CA.Color, CA.Asset.Group.DrawingFullAlpha);
+					DrawImageCanvasColorize("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + (CA.Asset.Group.DrawingBlink ? "Closed/" : Expression) + CA.Asset.Name + G + LayerType + Layer + ".png", C.CanvasBlink.getContext("2d"), X, Y, 1, CA.Color, CA.Asset.Group.DrawingFullAlpha);
 				} else {
 					var Color = ((CA.Color == null) || (CA.Color == "Default") || (CA.Color == "") || (CA.Color.length == 1) || (CA.Color.indexOf("#") == 0)) ? "" : "_" + CA.Color;
-					DrawImageCanvas("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + Expression + CA.Asset.Name + G + LayerType + Color + Layer + ".png", C.Canvas.getContext("2d"), CA.Asset.Group.DrawingLeft, CA.Asset.Group.DrawingTop);
-					DrawImageCanvas("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + (CA.Asset.Group.DrawingBlink ? "Closed/" : Expression) + CA.Asset.Name + G + LayerType + Color + Layer + ".png", C.CanvasBlink.getContext("2d"), CA.Asset.Group.DrawingLeft, CA.Asset.Group.DrawingTop);
+					DrawImageCanvas("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + Expression + CA.Asset.Name + G + LayerType + Color + Layer + ".png", C.Canvas.getContext("2d"), X, Y);
+					DrawImageCanvas("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + (CA.Asset.Group.DrawingBlink ? "Closed/" : Expression) + CA.Asset.Name + G + LayerType + Color + Layer + ".png", C.CanvasBlink.getContext("2d"), X, Y);
 				}
 			}
 
 			// If we must draw the lock (never colorized)
 			if ((CA.Property != null) && (CA.Property.LockedBy != null) && (CA.Property.LockedBy != "")) {
-				DrawImageCanvas("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + Expression + CA.Asset.Name + Type + "_Lock.png", C.Canvas.getContext("2d"), CA.Asset.Group.DrawingLeft, CA.Asset.Group.DrawingTop);
-				DrawImageCanvas("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + (CA.Asset.Group.DrawingBlink ? "Closed/" : Expression) + CA.Asset.Name + Type + "_Lock.png", C.CanvasBlink.getContext("2d"), CA.Asset.Group.DrawingLeft, CA.Asset.Group.DrawingTop);
+				DrawImageCanvas("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + Expression + CA.Asset.Name + Type + "_Lock.png", C.Canvas.getContext("2d"), X, Y);
+				DrawImageCanvas("Assets/" + CA.Asset.Group.Family + "/" + CA.Asset.Group.Name + "/" + Pose + (CA.Asset.Group.DrawingBlink ? "Closed/" : Expression) + CA.Asset.Name + Type + "_Lock.png", C.CanvasBlink.getContext("2d"), X, Y);
 			}
 		}
 }
@@ -359,6 +372,8 @@ function AppearanceRun() {
 	DrawCharacter(C, -600, (C.IsKneeling()) ? -1100 : -100, 4, false);
 	DrawCharacter(C, 750, 0, 1);
 	DrawText(CharacterAppearanceHeaderText, 400, 40, "White", "Black");
+
+	var HideColorPicker = true;
 
 	// Out of the color picker
 	if (!CharacterAppearanceWardrobeMode && CharacterAppearanceColorPicker == "") {
@@ -406,9 +421,16 @@ function AppearanceRun() {
 
 		// Draw the color picker
 		ElementPosition("InputColor", 1450, 65, 300);
-		DrawButton(1610, 37, 65, 65, "", "White", "Icons/Color.png");
-		DrawImage("Backgrounds/ColorPicker.png", 1300, 145);
+		HideColorPicker = false;
+		ColorPickerDraw(1300, 145, 675, 830, ElementValue("InputColor"), function (Color) {
+			CharacterAppearanceSetColorForGroup(C, Color, CharacterAppearanceColorPicker);
+			ElementValue("InputColor", Color);
+		});
 
+	}
+
+	if (HideColorPicker) {
+		ColorPickerHide();
 	}
 
 	// Draw the default buttons
@@ -614,13 +636,6 @@ function AppearanceClick() {
 			if (CommonIsColor(ElementValue("InputColor")))
 				CharacterAppearanceSetColorForGroup(C, ElementValue("InputColor").toLowerCase(), CharacterAppearanceColorPicker);
 
-		// In color picker mode, we can pick a color from the color image
-		if ((MouseX >= 1300) && (MouseX < 1975) && (MouseY >= 145) && (MouseY < 975)) {
-			var Color = DrawRGBToHex(MainCanvas.getImageData(MouseX, MouseY, 1, 1).data);
-			CharacterAppearanceSetColorForGroup(C, Color, CharacterAppearanceColorPicker);
-			ElementValue("InputColor", Color);
-		}
-
 		// Accepts the new color
 		if ((MouseX >= 1768) && (MouseX < 1858) && (MouseY >= 25) && (MouseY < 115)) {
 			CharacterAppearanceSetColorForGroup(C, CharacterAppearanceColorPickerBackup, CharacterAppearanceColorPicker);
@@ -683,7 +698,13 @@ function CharacterAppearanceReady(C) {
 	// If there's no error, we continue to the login or main hall if already logged
 	if (C.AccountName != "") {
 		ServerPlayerAppearanceSync();
-		if (CharacterAppearanceReturnRoom == "ChatRoom") ChatRoomCharacterUpdate(C);
+		if (CharacterAppearanceReturnRoom == "ChatRoom") {
+			var Dictionary = [];
+			Dictionary.push({Tag: "DestinationCharacter", Text: C.Name, MemberNumber: C.MemberNumber});
+			Dictionary.push({Tag: "SourceCharacter", Text: Player.Name, MemberNumber: Player.MemberNumber});
+			ServerSend("ChatRoomChat", { Content: "ChangeClothes", Type: "Action" , Dictionary: Dictionary});
+			ChatRoomCharacterUpdate(C);
+		}
 		CommonSetScreen(CharacterAppearanceReturnModule, CharacterAppearanceReturnRoom);
 		CharacterAppearanceReturnRoom = "MainHall";
 		CharacterAppearanceReturnModule = "Room";
