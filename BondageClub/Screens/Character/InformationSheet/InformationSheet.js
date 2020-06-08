@@ -39,22 +39,34 @@ function InformationSheetRun() {
 		if (C.Creation != null) DrawText(TextGet("MemberFor") + " " + (Math.floor((CurrentTime - C.Creation) / 86400000)).toString() + " " + TextGet("Days"), 550, 350, "Black", "Gray");
 	}
 	
-	// Shows the lover and owner
-	DrawText(TextGet("Lover") + " " + (((C.Lover == null) || (C.Lover == "")) ? TextGet("LoverNone") : C.Lover.replace("NPC-", "")), 550, 500, "Black", "Gray");	
-	if ((C.Ownership == null) || (C.Ownership.Name == null) || (C.Ownership.MemberNumber == null) || (C.Ownership.Start == null) || (C.Ownership.Stage == null)) {
-		DrawText(TextGet("Owner") + " " + (((C.Owner == null) || (C.Owner == "")) ? TextGet("OwnerNone") : C.Owner.replace("NPC-", "")), 550, 575, "Black", "Gray");
-		if ((C.Owner != null) && (C.Owner != "") && (C.ID != 0) && (NPCEventGet(C, "NPCCollaring") > 0)) DrawText(TextGet("CollaredFor") + " " + (Math.floor((CurrentTime - NPCEventGet(C, "NPCCollaring")) / 86400000)).toString() + " " + TextGet("Days"), 550, 650, "Black", "Gray");
+	// Shows the lover
+	if ((C.Lovership == null) || (C.Lovership.Name == null) || (C.Lovership.MemberNumber == null) || (C.Lovership.Start == null) || (C.Lovership.Stage == null)) {
+		DrawText(TextGet("Lover") + " " + (((C.Lover == null) || (C.Lover == "")) ? (C.Lovership == null) || (C.Lovership.Name == null) ? TextGet("LoverNone") : C.Lovership.Name.replace("NPC-", "") : C.Lover.replace("NPC-", "")), 550, 500, "Black", "Gray");
+		if ((C.Lover != null) && (C.Lover != "") && (C.ID != 0) && (NPCEventGet(C, "Girlfriend") > 0)) DrawText(TextGet("LoverFor") + " " + (Math.floor((CurrentTime - NPCEventGet(C, "Girlfriend")) / 86400000)).toString() + " " + TextGet("Days"), 550, 575, "Black", "Gray");
 	} else {
-		DrawText(TextGet("Owner") + " " + C.Ownership.Name + " (" + C.Ownership.MemberNumber + ")", 550, 575, "Black", "Gray");
-		DrawText(TextGet((C.Ownership.Stage == 0) ? "TrialFor" : "CollaredFor") + " " + (Math.floor((CurrentTime - C.Ownership.Start) / 86400000)).toString() + " " + TextGet("Days"), 550, 650, "Black", "Gray");
+		DrawText(TextGet("Lover") + " " + C.Lovership.Name + " (" + C.Lovership.MemberNumber + ")", 550, 500, "Black", "Gray");
+		DrawText(TextGet((C.Lovership.Stage == 0) ? "DatingFor" : (C.Lovership.Stage == 1) ? "EngagedFor" : "MarriedFor") + " " + (Math.floor((CurrentTime - C.Lovership.Start) / 86400000)).toString() + " " + TextGet("Days"), 550, 575, "Black", "Gray");
 	}
 
-	var OnlinePlayer = C.AccountName.indexOf("Online-") >= 0;
+	// Shows the owner
+	if ((C.Ownership == null) || (C.Ownership.Name == null) || (C.Ownership.MemberNumber == null) || (C.Ownership.Start == null) || (C.Ownership.Stage == null)) {
+		DrawText(TextGet("Owner") + " " + (((C.Owner == null) || (C.Owner == "")) ? TextGet("OwnerNone") : C.Owner.replace("NPC-", "")), 550, 650, "Black", "Gray");
+		if ((C.Owner != null) && (C.Owner != "") && (C.ID != 0) && (NPCEventGet(C, "NPCCollaring") > 0)) DrawText(TextGet("CollaredFor") + " " + (Math.floor((CurrentTime - NPCEventGet(C, "NPCCollaring")) / 86400000)).toString() + " " + TextGet("Days"), 550, 725, "Black", "Gray");
+	} else {
+		DrawText(TextGet("Owner") + " " + C.Ownership.Name + " (" + C.Ownership.MemberNumber + ")", 550, 650, "Black", "Gray");
+		DrawText(TextGet((C.Ownership.Stage == 0) ? "TrialFor" : "CollaredFor") + " " + (Math.floor((CurrentTime - C.Ownership.Start) / 86400000)).toString() + " " + TextGet("Days"), 550, 725, "Black", "Gray");
+	}
+
+	// Shows the LARP class
+	if ((C.Game != null) && (C.Game.LARP != null) && (C.Game.LARP.Class != null))
+		DrawText(TextGet("LARPClass") + " " + TextGet("LARPClass" + C.Game.LARP.Class), 550, 800, "Black", "Gray");
+
 	// For player and online characters, we show the reputation and skills
+	var OnlinePlayer = C.AccountName.indexOf("Online-") >= 0;
 	if ((C.ID == 0) || OnlinePlayer) {
 
 		// Shows the member number and online permissions for other players
-		if (C.ID != 0) DrawText(TextGet("ItemPermission") + " " + TextGet("PermissionLevel" + C.ItemPermission.toString()), 550, 850, "Black", "Gray");
+		if (C.ID != 0) DrawText(TextGet("ItemPermission") + " " + TextGet("PermissionLevel" + C.ItemPermission.toString()), 550, 875, "Black", "Gray");
 
 		// Draw the reputation section
 		DrawText(TextGet("Reputation"), 1000, 125, "Black", "Gray");
@@ -67,14 +79,14 @@ function InformationSheetRun() {
 		if (pos == 0) DrawText(TextGet("ReputationNone"), 1000, 200, "Black", "Gray");
 
 		// Draw the skill section
-		DrawText(TextGet("Skill"), 1450, 125, "Black", "Gray");
+		DrawText(TextGet("Skill"), 1425, 125, "Black", "Gray");
 		if (C.AccountName.indexOf("Online-") >= 0) {
-			DrawText(TextGet("Unknown"), 1450, 200, "Black", "Gray");
+			DrawText(TextGet("Unknown"), 1425, 200, "Black", "Gray");
 		}
 		else {
 			for(var S = 0; S < C.Skill.length; S++)
-				DrawText(TextGet("Skill" + C.Skill[S].Type) + " " + C.Skill[S].Level.toString() + " (" + Math.floor(C.Skill[S].Progress / 10) + "%)", 1450, 200 + S * 75, "Black", "Gray");
-			if (C.Skill.length == 0) DrawText(TextGet("SkillNone"), 1450, 200, "Black", "Gray");
+				DrawText(TextGet("Skill" + C.Skill[S].Type) + " " + C.Skill[S].Level.toString() + " (" + Math.floor(C.Skill[S].Progress / 10) + "%)", 1425, 200 + S * 75, ((C.Skill[S].Ratio != null) && (C.Skill[S].Ratio != 1)) ? "Red" : "Black", "Gray");
+			if (C.Skill.length == 0) DrawText(TextGet("SkillNone"), 1425, 200, "Black", "Gray");
 		}
 
 		// Draw the player skill modifier if there's one
@@ -83,12 +95,11 @@ function InformationSheetRun() {
 			var PlusSign = "";
 			if (SkillModifier > 0) PlusSign = "+";
 			else PlusSign = "";
-			DrawText(TextGet("SkillModifier"), 1450, 575, "Black", "Gray");
-			DrawText(TextGet("SkillBondage") + " " + PlusSign + SkillModifier, 1450, 650, "Black", "Gray");
-			DrawText(TextGet("SkillEvasion") + " " + PlusSign + SkillModifier, 1450, 725, "Black", "Gray");
-			DrawText(TextGet("SkillModifierDuration") + " " + (TimermsToTime(LogValue("ModifierDuration", "SkillModifier") - CurrentTime)), 1450, 800, "Black", "Gray");
+			DrawText(TextGet("SkillModifier"), 1425, 575, "Black", "Gray");
+			DrawText(TextGet("SkillBondage") + " " + PlusSign + SkillModifier, 1425, 650, "Black", "Gray");
+			DrawText(TextGet("SkillEvasion") + " " + PlusSign + SkillModifier, 1425, 725, "Black", "Gray");
+			DrawText(TextGet("SkillModifierDuration") + " " + (TimermsToTime(LogValue("ModifierDuration", "SkillModifier") - CurrentTime)), 1425, 800, "Black", "Gray");
 		}
-
 
 	} else {
 

@@ -30,23 +30,32 @@ function ManagementCanPlayWithoutPermission() { return (!ManagementMistressAllow
 function ManagementOwnerFromBondageCollege() { return ((Player.Owner == "NPC-Sidney") || (Player.Owner == "NPC-Amanda") || (Player.Owner == "NPC-Jennifer")) }
 function ManagementOwnerInPrivateRoom() { return PrivateOwnerInRoom() }
 function ManagementOwnerAway() { return !((Player.Owner == "NPC-Sidney") || (Player.Owner == "NPC-Amanda") || (Player.Owner == "NPC-Jennifer")) }
-function ManagementAllowReleaseChastity() { return (Player.IsChaste() && ManagementCanReleaseChastity && !InventoryOwnerOnlyItem(InventoryGet(Player, "ItemBreast"))&& !InventoryOwnerOnlyItem(InventoryGet(Player, "ItemPelvis"))) }
+function ManagementAllowReleaseChastity() { return (Player.IsChaste() && ManagementCanReleaseChastity && (ManagementCanUnlockBra() || ManagementCanUnlockBelt() || ManagementCanUnlockButt() || ManagementCanUnlockVulva() || ManagementCanUnlockNipples()) )}
 function ManagementRefuseReleaseChastity() { return (Player.IsChaste() && !ManagementCanReleaseChastity) }
 function ManagementOwnerPending() { return (CommonTime() < ManagementMistressReleaseTimer) }
 function ManagementOwnerAccepted() { return ((CommonTime() >= ManagementMistressReleaseTimer) && ManagementCanReleaseChastity) }
 function ManagementOwnerRefused() { return ((CommonTime() >= ManagementMistressReleaseTimer) && !ManagementCanReleaseChastity) }
-function ManagementCanUnlockBra() { return ((Player.Money >= 25) && Player.IsBreastChaste() && (!InventoryOwnerOnlyItem(InventoryGet(Player, "ItemBreast")) || !Player.IsOwned())) }
-function ManagementCanUnlockBelt() { return ((Player.Money >= 25) && Player.IsVulvaChaste() && (!InventoryOwnerOnlyItem(InventoryGet(Player, "ItemPelvis")) || !Player.IsOwned())) }
+function ManagementCanUnlockBra() { return ((Player.Money >= 25) && InventoryItemHasEffect(InventoryGet(Player, "ItemBreast"), "BreastChaste") && (!InventoryOwnerOnlyItem(InventoryGet(Player, "ItemBreast")) || !Player.IsOwned() )) }
+function ManagementCanUnlockButt() { return ((Player.Money >= 25) && InventoryItemHasEffect(InventoryGet(Player, "ItemButt"), "Chaste") && !InventoryGroupIsBlocked(Player, "ItemButt") && (!InventoryOwnerOnlyItem(InventoryGet(Player, "ItemButt")) || !Player.IsOwned())) }
+function ManagementCanUnlockVulva() { return ((Player.Money >= 25) && InventoryItemHasEffect(InventoryGet(Player, "ItemVulvaPiercings"), "Chaste") && !InventoryGroupIsBlocked(Player, "ItemVulvaPiercings") && (!InventoryOwnerOnlyItem(InventoryGet(Player, "ItemVulvaPiercings")) || !Player.IsOwned())) }
+function ManagementCanUnlockNipples() { return ((Player.Money >= 25) && InventoryItemHasEffect(InventoryGet(Player, "ItemNipplesPiercings"), "BreastChaste") && !InventoryGroupIsBlocked(Player, "ItemNipplesPiercings") && (!InventoryOwnerOnlyItem(InventoryGet(Player, "ItemNipplesPiercings")) ||!Player.IsOwned())) }
+function ManagementCanUnlockBelt() { return ((Player.Money >= 25) && InventoryItemHasEffect(InventoryGet(Player, "ItemPelvis"), "Chaste") && (!InventoryOwnerOnlyItem(InventoryGet(Player, "ItemPelvis")) || !Player.IsOwned())) }
 function ManagementEndChastityRelease() { ManagementMistressReleaseTimer = 0 }
 function ManagementCanReleaseFromOwnerFirst() { return ((Player.Money >= 60) && !LogQuery("ReleasedFromOwner", "Management")) }
 function ManagementCanReleaseFromOwner() { return ((Player.Money >= 200) && LogQuery("ReleasedFromOwner", "Management")) }
 function ManagementCanBreakTrialOnline() { return ((Player.Owner == "") && (Player.Ownership != null) && (Player.Ownership.Stage != null) && (Player.Ownership.Stage == 0)) }
-function ManagementCanBeReleasedOnline() { return ((Player.Owner != "") && (Player.Ownership != null) && (Player.Ownership.Start != null) && (Player.Ownership.Start + 259200000 <= CurrentTime)) }
-function ManagementCannotBeReleasedOnline() { return ((Player.Owner != "") && (Player.Ownership != null) && (Player.Ownership.Start != null) && (Player.Ownership.Start + 259200000 > CurrentTime)) }
+function ManagementCanBeReleasedOnline() { return ((Player.Owner != "") && (Player.Ownership != null) && (Player.Ownership.Start != null) && (Player.Ownership.Start + 604800000 <= CurrentTime)) }
+function ManagementCannotBeReleasedOnline() { return ((Player.Owner != "") && (Player.Ownership != null) && (Player.Ownership.Start != null) && (Player.Ownership.Start + 604800000 > CurrentTime)) }
 function ManagementCanBeReleased() { return ((Player.Owner != "") && (Player.Ownership == null) && !PrivateOwnerInRoom()) }
 function ManagementCannotBeReleased() { return ((Player.Owner != "") && (Player.Ownership == null) && PrivateOwnerInRoom()) }
 function ManagementWillOwnPlayer() { return ((Player.Owner == "") && (ReputationGet("Dominant") <= -100) && (ManagementMistressAngryCount == 0) && (PrivateCharacter.length <= PrivateCharacterMax) && !PrivatePlayerIsOwned() && ManagementNoMistressInPrivateRoom()) }
 function ManagementWontOwnPlayer() { return ((Player.Owner == "") && (ReputationGet("Dominant") <= -1) && (ReputationGet("Dominant") >= -99) && (PrivateCharacter.length <= PrivateCharacterMax) && !PrivatePlayerIsOwned() && ManagementNoMistressInPrivateRoom()) }
+function ManagementLoverFromBondageCollege() { return ((Player.Lover == "NPC-Sidney") || (Player.Lover == "NPC-Amanda") || (Player.Lover == "NPC-Jennifer")) }
+function ManagementCanBreakDatingLoverOnline() { return ((Player.Lover == "") && (Player.Lovership != null) && (Player.Lovership.Stage != null) && (Player.Lovership.Stage != 2)) }
+function ManagementCanBreakUpLoverOnline() { return ((Player.Lover != "") && (Player.Lovership != null) && (Player.Lovership.Stage != null) && (Player.Lovership.Stage == 2) && (Player.Lovership.Start != null) && (Player.Lovership.Start + 604800000 < CurrentTime)) }
+function ManagementCannotBreakUpLoverOnline() { return ((Player.Lover != "") && (Player.Lovership != null) && (Player.Lovership.Stage != null) && (Player.Lovership.Stage == 2) && (Player.Lovership.Start != null) && (Player.Lovership.Start + 604800000 >= CurrentTime)) }
+function ManagementCanBreakUpLoverNPC() { return ((Player.Lover != "") && !PrivateLoverInRoom()) }
+function ManagementCannotBreakUpLoverNPC() { return ((Player.Lover != "") && PrivateLoverInRoom()) }
 function ManagementIsClubSlave() { return ((InventoryGet(Player, "ItemNeck") != null) && (InventoryGet(Player, "ItemNeck").Asset.Name == "ClubSlaveCollar")) }
 function ManagementWearingSlaveCollar() { return ((InventoryGet(Player, "ItemNeck") != null) && (InventoryGet(Player, "ItemNeck").Asset.Name == "SlaveCollar")) }
 function ManagementCanTransferToRoom() { return (LogQuery("RentRoom", "PrivateRoom") && (PrivateCharacter.length < PrivateCharacterMax) && !LogQuery("LockOutOfPrivateRoom", "Rule")) }
@@ -155,10 +164,14 @@ function ManagementPlayerArmbinder(ChangeRep) {
 // Straps many restrains and chastity items on the player
 function ManagementPlayerRandomRestrain() {
 	CharacterFullRandomRestrain(Player, "Lot");
-	InventoryWear(Player, "MetalChastityBelt", "ItemPelvis");
-	InventoryLock(Player, "ItemPelvis", "MistressPadlock", -1);
-	InventoryWear(Player, "MetalChastityBra", "ItemBreast");
-	InventoryLock(Player, "ItemBreast", "MistressPadlock", -1);
+	if (!InventoryOwnerOnlyItem(InventoryGet(Player, "ItemPelvis"))) {
+		InventoryWear(Player, "MetalChastityBelt", "ItemPelvis");
+		InventoryLock(Player, "ItemPelvis", "MistressPadlock", -1);
+	}
+	if (!InventoryOwnerOnlyItem(InventoryGet(Player, "ItemBreast"))) {
+		InventoryWear(Player, "MetalChastityBra", "ItemBreast");
+		InventoryLock(Player, "ItemBreast", "MistressPadlock", -1);
+	}
 	ManagementCanReleaseChastity = false;
 }
 
@@ -220,6 +233,8 @@ function ManagementReleaseFromOwner(RepChange) {
 	Player.Owner = "";
 	ServerPlayerSync();
 	InventoryRemove(Player, "ItemNeck");
+	InventoryRemove(Player, "ItemNeckAccessories");
+	InventoryRemove(Player, "ItemNeckRestraints");
 	ReputationProgress("Dominant", RepChange);
 	LogAdd("ReleasedFromOwner", "Management");
 	if ((Player.Ownership != null) && (Player.Ownership.MemberNumber != null)) ServerSend("AccountOwnership", { MemberNumber: Player.Ownership.MemberNumber, Action: "Break" });
@@ -233,6 +248,13 @@ function ManagementBreakTrialOnline() {
 		for (var A = 0; A < Player.Appearance.length; A++)
 			ServerValidateProperties(Player, Player.Appearance[A]);
 	}
+}
+
+// When the Mistress breaks the bond between lovers
+function ManagementBreakLover() {
+	Player.Lover = "";
+	ServerSend("AccountLovership", { MemberNumber: Player.Lovership && Player.Lovership.MemberNumber ? Player.Lovership.MemberNumber : -1, Name: Player.Lovership && Player.Lovership.Name, Action: "Break" });
+	ServerPlayerSync();
 }
 
 // When the Mistress leaves her job to go see the player
@@ -261,7 +283,11 @@ function ManagementFinishClubSlave(RepChange) {
 	ReputationProgress("Dominant", RepChange);
 	CharacterChangeMoney(Player, 80);
 	if (Player.IsOwned()) InventoryWear(Player, "SlaveCollar", "ItemNeck");
-	else InventoryRemove(Player, "ItemNeck");
+	else {
+		InventoryRemove(Player, "ItemNeck");
+		InventoryRemove(Player, "ItemNeckAccessories");
+		InventoryRemove(Player, "ItemNeckRestraints");
+	}
 	if (Player.IsNaked()) CharacterDress(Player, ManagementPlayerAppearance);
 }
 

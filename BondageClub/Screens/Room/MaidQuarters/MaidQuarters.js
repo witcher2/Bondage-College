@@ -2,8 +2,7 @@
 var MaidQuartersBackground = "MaidQuarters";
 var MaidQuartersMaid = null;
 var MaidQuartersMaidInitiation = null;
-var MaidQuartersPreviousCloth = null;
-var MaidQuartersPreviousHat = null;
+var MaidQuartersItemClothPrev = {Cloth:null, Hat:null, ItemArms:null, ItemLegs:null, ItemFeet:null};
 var MaidQuartersMaidReleasedPlayer = false;
 var MaidQuartersCanBecomeMaid = false;
 var MaidQuartersCannotBecomeMaidYet = false;
@@ -47,7 +46,7 @@ function MaidQuartersLoad() {
 
 }
 
-// Run the maid quarters, draw both characters
+// Run the maid quarters, draw both characters (The screen can be used for the search daily job)
 function MaidQuartersRun() {
 	MaidQuartersCanBecomeMaid = (!LogQuery("JoinedSorority", "Maid") && (ReputationGet("Maid") >= 50));
 	MaidQuartersCannotBecomeMaidYet = ((ReputationGet("Maid") > 0) && (ReputationGet("Maid") < 50) && !LogQuery("JoinedSorority", "Maid"));
@@ -55,22 +54,24 @@ function MaidQuartersRun() {
 	MaidQuartersCannotBecomeHeadMaidYet = (((ReputationGet("Maid") < 100) || (ReputationGet("Dominant") < 50)) && LogQuery("JoinedSorority", "Maid") && !LogQuery("LeadSorority", "Maid"));
 	MaidQuartersIsMaid = LogQuery("JoinedSorority", "Maid");
 	MaidQuartersIsHeadMaid = LogQuery("LeadSorority", "Maid");
-	DrawCharacter(Player, 500, 0, 1);
-	DrawCharacter(MaidQuartersMaid, 1000, 0, 1);
+	if (!DailyJobSubSearchIsActive()) DrawCharacter(Player, 500, 0, 1);
+	if (!DailyJobSubSearchIsActive()) DrawCharacter(MaidQuartersMaid, 1000, 0, 1);
 	if (Player.CanWalk()) DrawButton(1885, 25, 90, 90, "", "White", "Icons/Exit.png");
 	DrawButton(1885, 145, 90, 90, "", "White", "Icons/Character.png");
+	DailyJobSubSearchRun();
 }
 
 // When the user clicks in the maid quarters
 function MaidQuartersClick() {
-	if ((MouseX >= 500) && (MouseX < 1000) && (MouseY >= 0) && (MouseY < 1000)) CharacterSetCurrent(Player);
-	if ((MouseX >= 1000) && (MouseX < 1500) && (MouseY >= 0) && (MouseY < 1000)) {
+	if (!DailyJobSubSearchIsActive() && (MouseX >= 500) && (MouseX < 1000) && (MouseY >= 0) && (MouseY < 1000)) CharacterSetCurrent(Player);
+	if (!DailyJobSubSearchIsActive() && (MouseX >= 1000) && (MouseX < 1500) && (MouseY >= 0) && (MouseY < 1000)) {
 		ManagementClubSlaveDialog(MaidQuartersMaid);
 		CharacterSetCurrent(MaidQuartersMaid);
 		if (MaidQuartersMaid.Stage == "285") MaidQuartersMaid.CurrentDialog = DialogFind(MaidQuartersMaid, (MaidQuartersOnlineDrinkCompleted()) ? "MaidDrinkOnlineComplete" : "MaidDrinkOnlineIncomplete");
 	}
 	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 25) && (MouseY < 115) && Player.CanWalk()) CommonSetScreen("Room", "MainHall");
 	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 145) && (MouseY < 235)) InformationSheetLoadCharacter(Player);
+	DailyJobSubSearchClick();
 }
 
 // The maid can ungag the player
@@ -89,20 +90,26 @@ function MaidQuartersMaidUngagPlayer() {
 
 // When the player dresses as a maid
 function MaidQuartersWearMaidUniform() {
-	MaidQuartersPreviousCloth = InventoryGet(Player, "Cloth");
-	MaidQuartersPreviousHat = InventoryGet(Player, "Hat");
+	for (var ItemAssetGroupName in MaidQuartersItemClothPrev) {
+		MaidQuartersItemClothPrev[ItemAssetGroupName] = InventoryGet(Player, ItemAssetGroupName);
+		InventoryRemove(Player, ItemAssetGroupName);
+	}
 	InventoryWear(Player, "MaidOutfit1", "Cloth", "Default");
 	InventoryWear(Player, "MaidHairband1", "Hat", "Default");
 }
 
 // When the player removes the maid uniform and dresses back
 function MaidQuartersRemoveMaidUniform() {
-	CharacterRelease(Player);
-	if (MaidQuartersPreviousCloth != null) InventoryWear(Player, MaidQuartersPreviousCloth.Asset.Name, "Cloth", MaidQuartersPreviousCloth.Color);
-	else InventoryRemove(Player, "Cloth");
-	if (MaidQuartersPreviousHat != null) InventoryWear(Player, MaidQuartersPreviousHat.Asset.Name, "Hat", MaidQuartersPreviousHat.Color);
-	else InventoryRemove(Player, "Hat");
+	CharacterReleaseNoLock(Player);
+	for (var ItemAssetGroupName in MaidQuartersItemClothPrev) {
+		var PreviousItem = MaidQuartersItemClothPrev[ItemAssetGroupName];
+		InventoryRemove(Player, ItemAssetGroupName);
+		if (PreviousItem) InventoryWear(Player, PreviousItem.Asset.Name, ItemAssetGroupName, PreviousItem.Color);
+		if (PreviousItem && PreviousItem.Property) InventoryGet(Player, ItemAssetGroupName).Property = PreviousItem.Property;
+		MaidQuartersItemClothPrev[ItemAssetGroupName] = null;
+	}
 	InventoryRemove(Player, "ItemMisc");
+	CharacterRefresh(Player);
 }
 
 // When the mini game / maid chore starts
@@ -131,12 +138,15 @@ function MaidQuartersMiniGamePay() {
 	if (MiniGameDifficulty == "Hard") M = M * 2;
 	MaidQuartersMaid.CurrentDialog = MaidQuartersMaid.CurrentDialog.replace("REPLACEMONEY", M.toString());
 	CharacterChangeMoney(Player, M);
+	IntroductionJobProgress("SubMaid");
 }
 
-function MaidQuartersMiniGamePayAdvanced(){
+// When the music mini game is successful, the player gets paid
+function MaidQuartersMiniGamePayAdvanced() {
 	ReputationProgress("Maid", 4);
 	MaidQuartersMaid.CurrentDialog = MaidQuartersMaid.CurrentDialog.replace("REPLACEMONEY", MiniGameAdvancedPayment.toString());
 	CharacterChangeMoney(Player, MiniGameAdvancedPayment);
+	IntroductionJobProgress("SubMaid");
 }
 
 // When the rescue is successful, the player gets paid
@@ -146,6 +156,7 @@ function MaidQuartersRescuePay() {
 	var M = 10 + Math.floor(Math.random() * 11);
 	MaidQuartersMaid.CurrentDialog = MaidQuartersMaid.CurrentDialog.replace("REPLACEMONEY", M.toString());
 	CharacterChangeMoney(Player, M);
+	IntroductionJobProgress("SubMaid");
 }
 
 // When the maid releases the player
@@ -155,7 +166,7 @@ function MaidQuartersMaidReleasePlayer() {
 			ReputationProgress("Dominant", -1);
 			MaidQuartersMaidReleasedPlayer = true;
 		}
-		CharacterRelease(Player);
+		CharacterReleaseNoLock(Player);
 	} else MaidQuartersMaid.CurrentDialog = DialogFind(MaidQuartersMaid, "CantReleasePlayer");
 }
 
@@ -186,6 +197,8 @@ function MaidQuartersChangeInitiationMaid() {
 function MaidQuartersBecomMaid() {
 	InventoryAdd(Player, "MaidOutfit1", "Cloth");
 	InventoryAdd(Player, "MaidOutfit2", "Cloth");
+	InventoryAdd(Player, "MaidApron1", "Cloth");
+	InventoryAdd(Player, "MaidApron2", "Cloth");
 	InventoryAdd(Player, "MaidHairband1", "Hat");
 	InventoryWear(Player, "MaidOutfit1", "Cloth", "Default");
 	InventoryWear(Player, "MaidHairband1", "Hat", "Default");
@@ -211,8 +224,9 @@ function MaidQuartersStartRescue() {
 	MaidQuartersMaid.CurrentDialog = DialogFind(MaidQuartersMaid, "Rescue" + MaidQuartersCurrentRescue);
 	MaidQuartersCurrentRescueStarted = false;
 	MaidQuartersCurrentRescueCompleted = false;
-	MaidQuartersPreviousCloth = InventoryGet(Player, "Cloth");
-	MaidQuartersPreviousHat = InventoryGet(Player, "Hat");
+	
+	MaidQuartersItemClothPrev.Cloth = InventoryGet(Player, "Cloth");
+	MaidQuartersItemClothPrev.Hat = InventoryGet(Player, "Hat");
 
 }
 
@@ -267,6 +281,7 @@ function MaidQuartersOnlineDrinkPay() {
 	if (!MaidQuartersOnlineDrinkFromOwner) CharacterChangeMoney(Player, M);
 	else ChatRoomMoneyForOwner = M;
 	ReputationProgress("Maid", 4);
+	IntroductionJobProgress("SubMaid");
 }
 
 // Flags the maid drink as not from the player owner

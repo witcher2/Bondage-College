@@ -36,11 +36,16 @@ function MagicAssistantIsntDressRestrain() {return (MagicShowIsState(8) && !Magi
 
 function MagicRestrainMinItem(C, MinItem) {
 	var CurItem = 0;
-	for(var E = 0; E < C.Appearance.length; E++)
-	if ((C.Appearance[E].Asset.Group.Name == "ItemMouth") || (C.Appearance[E].Asset.Group.Name == "ItemArms") || (C.Appearance[E].Asset.Group.Name == "ItemFeet") || (C.Appearance[E].Asset.Group.Name == "ItemLegs") || (C.Appearance[E].Asset.Group.Name == "ItemHead") || (C.Appearance[E].Asset.Group.Name == "ItemMisc")) {
-		CurItem++
+	var GagApplied = false;
+	for (var E = 0; E < C.Appearance.length; E++) {
+		if ((C.Appearance[E].Asset.Group.Name == "ItemMouth") || (C.Appearance[E].Asset.Group.Name == "ItemMouth2") || (C.Appearance[E].Asset.Group.Name == "ItemMouth3")) {
+			GagApplied = true;
+		}
+		else if ((C.Appearance[E].Asset.Group.Name == "ItemArms") || (C.Appearance[E].Asset.Group.Name == "ItemFeet") || (C.Appearance[E].Asset.Group.Name == "ItemLegs") || (C.Appearance[E].Asset.Group.Name == "ItemHead") || (C.Appearance[E].Asset.Group.Name == "ItemMisc")) {
+			CurItem++
+		}
 	}
-	return (CurItem >= MinItem) ? true : false;
+	return (CurItem + (GagApplied ? 1 : 0)) >= MinItem;
 }
 
 
@@ -78,7 +83,6 @@ function MagicClick() {
 	if ((MouseX >= 1250) && (MouseX < 1750) && (MouseY >= 0) && (MouseY < 1000)) CharacterSetCurrent(MagicAssistant);
 	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 25) && (MouseY < 115) && Player.CanWalk()) CommonSetScreen("Room", "MainHall");
 	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 145) && (MouseY < 235)) InformationSheetLoadCharacter(Player);
-	//if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 265) && (MouseY < 355)) {console.log("", Player);}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

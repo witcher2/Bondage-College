@@ -16,6 +16,14 @@ function WardrobeLoadCharacterNames() {
 	}
 }
 
+// Makes sure the wardrobe is of the correct length
+function WardrobeFixLength() {
+	if (Player.Wardrobe != null) {
+		if (Player.Wardrobe.length > 12) Player.Wardrobe = Player.Wardrobe.slice(0, 11);
+		while (Player.Wardrobe.length < 12) Player.Wardrobe.push(null);
+	}
+}
+
 // Loads all wardrobe characters 
 function WardrobeLoadCharacters(Fast) {
 	Fast = Fast == null ? false : Fast;
@@ -24,6 +32,7 @@ function WardrobeLoadCharacters(Fast) {
 	if (Player.Wardrobe == null) Player.Wardrobe = [];
 	for (var P = 0; P < 12; P++) {
 		if (WardrobeCharacter.length <= P && ((W == null) || !Fast)) {
+
 			// Creates a character
 			CharacterReset(Character.length, "Female3DCG");
 			var C = Character[Character.length - 1];
@@ -40,19 +49,22 @@ function WardrobeLoadCharacters(Fast) {
 				WardrobeFastSave(C, P, false);
 				W = P;
 			}
+
 			// Keep the character
 			WardrobeCharacter.push(C);
+
 		} else if (W != null) {
+
 			// randomize only one character
 			CharacterAppearanceFullRandom(WardrobeCharacter[W]);
 			WardrobeFastSave(WardrobeCharacter[W], P, false);
+
 		}
 	}
 	if (W != null) {
-		if (Fast) {
-			WardrobeFastLoad(WardrobeCharacter[W], W);
-		}
-		ServerSend("AccountUpdate", { Wardrobe: Player.Wardrobe });
+		WardrobeFixLength();
+		if (Fast) WardrobeFastLoad(WardrobeCharacter[W], W);
+		ServerSend("AccountUpdate", { Wardrobe: CharacterCompressWardrobe(Player.Wardrobe) });
 	}
 }
 
@@ -102,10 +114,9 @@ function WardrobeClick() {
 				if ((MouseX >= 500 + C * 250) && (MouseX <= 725 + C * 250) && (MouseY >= 100) && (MouseY <= 450))
 					WardrobeSelection = C;
 			}
-			else {
+			else
 				if ((MouseX >= 500 + (C - 6) * 250) && (MouseX <= 725 + (C - 6) * 250) && (MouseY >= 550) && (MouseY <= 1000))
 					WardrobeSelection = C;
-			}
 }
 
 // when the user exit this screen
@@ -131,6 +142,8 @@ function WardrobeAssetBundle(A) {
 
 // Load character appearance from wardrobe, only load clothes on others
 function WardrobeFastLoad(C, W, Update) {
+	var savedExpression = {};
+	if (C == Player) savedExpression = WardrobeGetExpression(Player);
 	if (Player.Wardrobe != null && Player.Wardrobe[W] != null) {
 		var AddAll = C.ID == 0 || C.AccountName.indexOf("Wardrobe-") == 0;
 		C.Appearance = C.Appearance
@@ -155,6 +168,16 @@ function WardrobeFastLoad(C, W, Update) {
 					C.Appearance.push({ Asset: Asset.find(a => a.Group.Name == g.Name), Difficulty: 0, Color: "Default" });
 				}
 			});
+		// Restores the expressions the player had previously per item in the appearance
+		if (C == Player) {
+			Player.Appearance.forEach(item => {
+				if (savedExpression[item.Asset.Group.Name] != null) {
+					if (item.Property == null) item.Property = {};
+					item.Property.Expression = savedExpression[item.Asset.Group.Name];
+					
+				}
+			});
+		}
 		CharacterLoadCanvas(C);
 		if (Update == null || Update) {
 			if (C.ID == 0 && C.OnlineID != null) ServerPlayerAppearanceSync();
@@ -178,9 +201,15 @@ function WardrobeFastSave(C, W, Push) {
 				.filter(a => !a.Asset.Group.Clothing)
 				.map(WardrobeAssetBundle));
 		}
-		if (WardrobeCharacter != null && WardrobeCharacter[W] != null && C.AccountName != WardrobeCharacter[W].AccountName) {
-			WardrobeFastLoad(WardrobeCharacter[W], W);
-		}
-		if (Push == null || Push) ServerSend("AccountUpdate", { Wardrobe: Player.Wardrobe });
+		WardrobeFixLength();
+		if (WardrobeCharacter != null && WardrobeCharacter[W] != null && C.AccountName != WardrobeCharacter[W].AccountName) WardrobeFastLoad(WardrobeCharacter[W], W);
+		if ((Push == null) || Push) ServerSend("AccountUpdate", { Wardrobe: CharacterCompressWardrobe(Player.Wardrobe) });
 	}
+}
+
+//Returns the expressions of character C as a single big object
+function WardrobeGetExpression(C) {
+	var characterExpression = {}
+	ServerAppearanceBundle(C.Appearance).filter(item=>item.Property != null && item.Property.Expression != null).forEach(item => characterExpression[item.Group] = item.Property.Expression);
+	return characterExpression;
 }

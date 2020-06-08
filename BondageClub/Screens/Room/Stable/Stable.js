@@ -35,6 +35,9 @@ function StablePlayerDisallowedPonyExamen() {return (!StablePlayerIsExamPony && 
 function StablePlayerAllowedTrainerExamen() {return (!StablePlayerIsExamTrainer && StablePlayerIsTrainer && (SkillGetLevel(Player, "Dressage") >= 6) && (Player.Money > 99));}
 function StablePlayerDisallowedTrainerExamen() {return (!StablePlayerIsExamTrainer && StablePlayerIsTrainer && (SkillGetLevel(Player, "Dressage") < 6));}
 
+//BadGirlClub
+function StableCanHideDice() {return (LogQuery("Joined", "BadGirl") && LogQuery("Stolen", "BadGirl") && !LogQuery("Hide", "BadGirl"))}
+
 
 // Loads the stable characters with many restrains
 function StableLoad() {
@@ -89,6 +92,7 @@ function StableRun() {
 		DrawCharacter(StablePony, 1250, 0, 1);
 		if (Player.CanWalk() && (!StablePlayerTrainingActiv || StablePlayerIsExamPony)) DrawButton(1885, 25, 90, 90, "", "White", "Icons/Exit.png");
 		DrawButton(1885, 145, 90, 90, "", "White", "Icons/Character.png");
+		if (StableCanHideDice()) DrawButton(1885, 265, 90, 90, "", "White", "Icons/DiceHide.png", TextGet("HideDice"));
 		//DrawButton(1885, 265, 90, 90, "", "White", "Screens/Room/Stable/Horse.png");
 	}
 	StablePlayerIsPony = (LogQuery("JoinedStable", "Pony") && (ReputationGet("Dominant") < -30)) && !StablePlayerDressOff;
@@ -112,7 +116,7 @@ function StableClick() {
 		if ((MouseX >= 1250) && (MouseX < 1750) && (MouseY >= 0) && (MouseY < 1000)) CharacterSetCurrent(StablePony);
 		if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 25) && (MouseY < 115) && Player.CanWalk() && (!StablePlayerTrainingActiv || StablePlayerIsExamPony)) CommonSetScreen("Room", "MainHall");
 		if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 145) && (MouseY < 235)) InformationSheetLoadCharacter(Player);
-		//if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 265) && (MouseY < 355)) {LogDelete("JoinedStable", "TrainerExam");}
+		if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 265) && (MouseY < 355) && StableCanHideDice()) StableHideDice();
 	}
 }
 
@@ -457,8 +461,7 @@ function StablePlayerTrainingPass(Behavior) {
 			StableTrainer.Stage = "StableTrainingScratching";
 		} else if (PassSelection < 3) {
 			StablePlayerTrainingBehavior -= 2;
-			CharacterAppearanceNextItem(Player, "HairBack");
-			CharacterRefresh(Player);
+			StablePonyStraightens(Player);
 			StableTrainer.CurrentDialog = DialogFind(StableTrainer, "StableTrainingStraightenIntro");
 			StableTrainer.Stage = "StableTrainingStraighten";
 		} else if (PassSelection < 4) {
@@ -808,8 +811,16 @@ function StableTrainerWhipEnd() {
 	}
 }
 
-function StablePonyStraightens() {
-	CharacterAppearanceNextItem(StablePony, "HairBack");
+function StablePonyStraightens(C) {
+	C = C ? C : StablePony;
+	var Color = CharacterAppearanceGetCurrentValue(C,"HairBack", "Color");
+	CharacterAppearanceNextItem(C, "HairBack");
+	for (var A = 0; A < C.Appearance.length;A++){
+		if (C.Appearance[A].Asset.Group.Name == "HairBack"){
+			C.Appearance[A].Color = Color;
+		}
+	}
+	CharacterRefresh(C);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1031,7 +1042,7 @@ function StableGenericRun(Reverse) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//Help function
+//Help function & BadGirlClub
 ////////////////////////////////////////////////////////////////////////////////////////////
 function StableCheckInventory(C, Name, Group) {
 	for (var I = C.Inventory.length - 1; I > -1; I--)
@@ -1046,4 +1057,16 @@ function StableCharacterAppearanceGroupAvailable(C, AppearanceGroup) {
 		if (C.Appearance[I].Asset.Group.Name == AppearanceGroup)
 			return true;
 	return false;
+}
+
+// Try to Hide the Dice for BadGirlsClub
+function StableHideDice() {
+	if (Math.random() < 0.25) {
+		PrisonMeetPoliceIntro("HorseStable");
+	} else {
+		CharacterSetCurrent(Player);
+		Player.CurrentDialog = TextGet("SuccessHide");
+		LogDelete("Stolen", "BadGirl");
+		LogAdd("Hide", "BadGirl");
+	}
 }

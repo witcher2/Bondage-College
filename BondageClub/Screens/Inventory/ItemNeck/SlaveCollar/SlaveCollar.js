@@ -56,11 +56,11 @@ var InventoryItemNeckSlaveCollarTypes = [
 	},{
         Name: "LeatherCorsetCollar",
         Image: "LeatherCorsetCollar",
-        Property: { Type: "LeatherCorsetCollar", Effect: [], Block: [] }
+        Property: { Type: "LeatherCorsetCollar", Effect: ["GagNormal"], Block: ["ItemMouth", "ItemMouth2", "ItemMouth3"] }
 	},{
         Name: "StrictPostureCollar",
         Image: "StrictPostureCollar",
-        Property: { Type: "StrictPostureCollar", Effect: ["GagNormal"], Block: ["ItemMouth", "ItemMouth2", "ItemMouth3"] }
+        Property: { Type: "StrictPostureCollar", Effect: [], Block: [] }
 	},{
         Name: "LatexPostureCollar",
         Image: "LatexPostureCollar",
@@ -77,12 +77,26 @@ var InventoryItemNeckSlaveCollarTypes = [
         Name: "OrnateCollar",
         Image: "OrnateCollar",
         Property: { Type: "OrnateCollar", Effect: [], Block: [] }
+	},{
+        Name: "SlenderSteelCollar",
+        Image: "SlenderSteelCollar",
+        Property: { Type: "SlenderSteelCollar", Effect: [], Block: [] }
 	},
 ];
 
 // Loads the item extension properties
 function InventoryItemNeckSlaveCollarLoad() {
 	InventoryItemNeckSlaveCollarColorMode = false;
+	var C = CharacterGetCurrent();
+    var SC = InventoryItemNeckSlaveCollarTypes.find(element => (element.Name == "LoveLeatherCollar"));
+    if (C && C.IsOwnedByPlayer() && C.IsLoverOfPlayer() && !SC) {
+        InventoryItemNeckSlaveCollarTypes.push({
+                Name: "LoveLeatherCollar",
+                Image: "LoveLeatherCollar",
+                Property: {Type: "LoveLeatherCollar", Effect: [], Block: []}
+        });
+    }
+    else if (C && C.IsOwnedByPlayer && !C.IsLoverOfPlayer() && SC) { InventoryItemNeckSlaveCollarTypes.splice(InventoryItemNeckSlaveCollarTypes.indexOf(SC,1)); }
     if (DialogFocusItem.Property == null) DialogFocusItem.Property = { Type: null, Effect: [], Block: [] };
 }
 
@@ -96,9 +110,7 @@ function InventoryItemNeckSlaveCollarDraw() {
 
             // In color picking mode, we allow the user to change the collar color
             ElementPosition("InputColor", 1450, 65, 300);
-            ColorPickerDraw(1300, 145, 675, 830, ElementValue("InputColor"), function (Color) {
-                ElementValue("InputColor", Color);
-            });
+            ColorPickerDraw(1300, 145, 675, 830, document.getElementById("InputColor"), function (Color) { DialogChangeItemColor(C, Color) });
             DrawButton(1665, 25, 90, 90, "", "White", "Icons/ColorSelect.png");
             DrawButton(1775, 25, 90, 90, "", "White", "Icons/ColorCancel.png");
 
@@ -143,7 +155,7 @@ function InventoryItemNeckSlaveCollarClick() {
                     CharacterAppearanceSetColorForGroup(C, Color, "ItemNeck");
                     InventoryItemNeckSlaveCollarColorMode = false;
                     ElementRemove("InputColor");
-                    ChatRoomCharacterUpdate(C);
+                    ChatRoomCharacterItemUpdate(C);
                     if (CurrentScreen != "ChatRoom") CharacterRefresh(C);
                     DialogFocusItem = null;
                 }
@@ -194,5 +206,5 @@ function InventoryItemNeckSlaveCollarSetType(NewType) {
     Dictionary.push({Tag: "DestinationCharacter", Text: C.Name, MemberNumber: C.MemberNumber});
     Dictionary.push({Tag: "SourceCharacter", Text: Player.Name, MemberNumber: Player.MemberNumber});
     ChatRoomPublishCustomAction("SlaveCollarChangeType", true, Dictionary);
-    if (CurrentScreen != "ChatRoom") CharacterRefresh(C);
+    CharacterRefresh(C);
 }

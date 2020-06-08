@@ -10,6 +10,12 @@ var ChatCreateBackgroundList = null;
 // When the chat creation screens loads
 function ChatCreateLoad() {
 
+	// Resets the room game statuses
+	if ((ChatRoomSpace == "LARP") && (Player.Game.LARP.Status != "")) {
+		Player.Game.LARP.Status = "";
+		ServerSend("AccountUpdate", { Game: Player.Game });
+	}
+
 	// If the current background isn't valid, we pick the first one
 	ChatCreateBackgroundIndex = ChatCreateBackgroundList.indexOf(ChatCreateBackgroundSelect);
 	if (ChatCreateBackgroundIndex < 0) {
@@ -61,7 +67,7 @@ function ChatCreateClick() {
 
 	// When we select a new background
 	if ((MouseX >= 900) && (MouseX < 1250) && (MouseY >= 640) && (MouseY < 705)) {
-		ChatCreateBackgroundIndex += ((MouseX < 1075 && !CommonIsMobile) ? -1 : 1);
+		ChatCreateBackgroundIndex += ((MouseX < 1075) ? -1 : 1);
 		if (ChatCreateBackgroundIndex >= ChatCreateBackgroundList.length) ChatCreateBackgroundIndex = 0;
 		if (ChatCreateBackgroundIndex < 0) ChatCreateBackgroundIndex = ChatCreateBackgroundList.length - 1;
 		ChatCreateBackgroundSelect = ChatCreateBackgroundList[ChatCreateBackgroundIndex];

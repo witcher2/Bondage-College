@@ -4,6 +4,7 @@ var GamblingBackground = "Gambling";
 var GamblingFirstSub = null;
 var GamblingSecondSub = null;
 var GamblingPlayerDice = null;
+var GamblingPolice = null;
 var GamblingNpcDice = null;
 var GamblingPlayerDiceStack = [];
 var GamblingNpcDiceStack = [];
@@ -41,6 +42,8 @@ function GamblingIsRestrainedWithoutLock() { return (Player.IsRestrained() && !I
 
 function GamblingCanPayToRelease() { return ((Player.Money >= 25) && !InventoryCharacterHasLockedRestraint(Player)) };
 function GamblingCannotPayToRelease() { return ((Player.Money < 25) && !InventoryCharacterHasLockedRestraint(Player)) };
+
+function GamblingCanStealDice() {return (LogQuery("Joined", "BadGirl") && !(LogQuery("Stolen", "BadGirl") || LogQuery("Hide", "BadGirl"))) }
 
 // Loads the Gambling Hall
 function GamblingLoad() {
@@ -88,6 +91,8 @@ function GamblingRun() {
 	if (Player.CanWalk()) DrawButton(1885, 25, 90, 90, "", "White", "Icons/Exit.png");
 	DrawButton(1885, 145, 90, 90, "", "White", "Icons/Character.png");
 	if (Player.CanInteract()) DrawButton(1885, 265, 90, 90, "", "White", "Icons/Dress.png"); //Only Dess Back after loose Game
+	//BadGirlsClub
+	if (GamblingCanStealDice()) DrawButton(1885, 385, 90, 90, "", "White", "Icons/DiceTheft.png", TextGet("DiceTheft"));
 }
 
 // When the user clicks in the Gambling Hall
@@ -95,21 +100,10 @@ function GamblingClick() {
 	if ((MouseX >= 250) && (MouseX < 750) && (MouseY >= 0) && (MouseY < 1000)) CharacterSetCurrent(GamblingFirstSub);
 	if ((MouseX >= 750) && (MouseX < 1250) && (MouseY >= 0) && (MouseY < 1000)) CharacterSetCurrent(Player);
 	if (((MouseX >= 1250) && (MouseX < 1750) && (MouseY >= 0) && (MouseY < 1000)) && ((ReputationGet("Gambling") > 20) || MaidQuartersCurrentRescue == "Gambling") ) CharacterSetCurrent(GamblingSecondSub);
-	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 25) && (MouseY < 115) && Player.CanWalk()) GamblingLeaveRoom();
+	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 25) && (MouseY < 115) && Player.CanWalk()) CommonSetScreen("Room", "MainHall");
 	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 145) && (MouseY < 235)) InformationSheetLoadCharacter(Player);
 	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 265) && (MouseY < 355)) GamblingDressBackPlayer();
-}
-
-//If the Player Illegal Strip the Cloth send to Prison 
-function GamblingLeaveRoom(){
-/*	if (GamblingIllegalChange) {
-		InventoryWear(Player, "MetalCuffs", "ItemArms");
-		PrisonPlayerForIllegalChange = true;
-		PrisonPlayerBehindBars = true;
-		CommonSetScreen("Room", "Prison");
-	} else {*/
-		CommonSetScreen("Room", "MainHall");
-//	}
+	if ((MouseX >= 1885) && (MouseX < 1975) && (MouseY >= 385) && (MouseY < 475)  && GamblingCanStealDice()) GamblingStealDice();
 }
 
 // Print the Stack of Dices and the Sum of Ponits and Player Money
@@ -179,7 +173,6 @@ function GamblingSimpleDiceController(SimpleDiceState) {
 	}
 }
 
-
 // Draws the Toothpicks
 function GamblingShowToothpickStack () {
 	for (var i = 0; i < GamblingToothpickCount; i++) {
@@ -247,7 +240,6 @@ function GamblingToothpickNPCChoice() {
 	else if (GamblingToothpickCount == 2) {choice = 1}
 	return choice
 }
-
 
 //Controller for fifteen and six
 function GamblingTwentyOneController(TwentyOneState) {
@@ -582,11 +574,6 @@ function GamblingDaredSixController (DaredSixState){
 	}		
 }	
 
-
-
-
-
-
 //get dressinglevel for Caracters
 function GamblingDressingLevel(C) {
 	if (CharacterIsNaked(C)) return 3;
@@ -698,4 +685,15 @@ function GamblingCompleteRescue() {
 	GamblingFirstSub.Stage = 0;
 	GamblingSecondSub.Stage = 0;
 	MaidQuartersCurrentRescueCompleted = true;
+}
+
+// Try to Steal the Dice for BadGirlsClub
+function GamblingStealDice() {
+	if (Math.random() < 0.25) {
+		PrisonMeetPoliceIntro("Gambling");
+	} else {
+		CharacterSetCurrent(Player);
+		Player.CurrentDialog = TextGet("SuccessStolen");
+		LogAdd("Stolen", "BadGirl");
+	}
 }

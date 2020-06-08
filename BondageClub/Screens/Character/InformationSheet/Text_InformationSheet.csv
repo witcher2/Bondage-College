@@ -35,6 +35,10 @@ MemberFor,Member for
 FriendsFor,Friends for
 TrialFor,On trial for
 CollaredFor,Collared for
+LoverFor,Lover for
+DatingFor,Dating for
+EngagedFor,Engaged for
+MarriedFor,Married for
 Days,day(s)
 Unknown,Unknown
 Reputation,- Reputation -
@@ -45,11 +49,20 @@ ReputationMaidPositive,Maid Sorority:
 ReputationKidnapPositive,Kidnappers League:
 ReputationAsylumPositive,Asylum Nurse:
 ReputationAsylumNegative,Asylum Patient:
+ReputationLARPPositive,LARP Battles:
 ReputationGamblingPositive,Gambling Hall:
 ReputationABDLPositive,ABDL:
+LARPClass,LARP Class:
+LARPClassMatron,Matron
+LARPClassSeducer,Seducer
+LARPClassTrickster,Trickster
+LARPClassServant,Servant
+LARPClassArtist,Artist
+LARPClassProtector,Protector
 Skill,- Skills -
 SkillNone,None
 SkillBondage,Bondage:
+SkillSelfBondage,Self-bondage:
 SkillEvasion,Evasion:
 SkillWillpower,Willpower:
 SkillDressage,Dressage:
@@ -82,6 +95,7 @@ RelationshipAtrocious,(Atrocious)
 ItemPermission,Item permission:
 PermissionLevel0,"Everyone, no exceptions"
 PermissionLevel1,"Everyone, except blacklist"
-PermissionLevel2,"Owner, whitelist & Dominants"
-PermissionLevel3,Owner and whitelist only
-PermissionLevel4,Owner only
+PermissionLevel2,"Owner, Lover, whitelist & Dominants"
+PermissionLevel3,"Owner, Lover and whitelist only"
+PermissionLevel4,Owner and Lover only
+PermissionLevel5,Owner only

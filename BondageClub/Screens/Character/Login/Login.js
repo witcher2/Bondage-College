@@ -4,9 +4,12 @@ var LoginMessage = "";
 var LoginCredits = null;
 var LoginCreditsPosition = 0;
 var LoginThankYou = "";
-var LoginThankYouList = ["Alvin", "Ayezona", "BlueWinter", "Bryce", "Christian", "Dan", "Desch", "Dini", "DonOlaf", "Escurse", "Fluffythewhat", "Greendragon", "Kitten", "Laioken", "Lennart", "Michal", "Mindtie", "Misa",
-						 "MunchyCat", "Nick", "Overlord", "Rashiash", "Robin", "Ryner", "Samuel", "Setsu", "Shadow", "Shaun", "Simeon", "SirCody", "Sky", "Victor", "William", "Winterisbest", "Xepherio"];
+var LoginThankYouList = ["Alvin", "Ayezona", "BlueEyedCat", "BlueWiner", "Bryce", "Christian", "Dan", "Dini", "Epona", "Escurse",
+						 "Fluffythewhat", "Greendragon", "John", "Laioken", "Lennart", "Michal", "Mindtie", "Misa", "Mitchell", "MuchyCat",
+						 "Mzklopyu", "Nera", "Nick", "Overlord", "Rashiash", "Ray", "Reire", "Robin", "Rutherford", "Ryner", 
+						 "Samuel", "Setsu", "Shadow", "Sky", "Thomas", "Trent", "William", "Xepherio"];
 var LoginThankYouNext = 0;
+//var LoginLastCT = 0;
 
 // Loads the next thank you bubble
 function LoginDoNextThankYou() {
@@ -19,6 +22,10 @@ function LoginDoNextThankYou() {
 
 // Draw the credits 
 function LoginDrawCredits() {
+
+	//var CT = CommonTime();
+	//if (LoginLastCT + 50 < CT) console.log("Slow Frame: " + (CT - LoginLastCT).toString());
+	//LoginLastCT = CT;
 
 	// For each credits in the list
 	LoginCreditsPosition++;
@@ -66,6 +73,8 @@ function LoginLoad() {
 	CharacterLoadCSVDialog(Player);
 	LoginMessage = "";
 	if (LoginCredits == null) CommonReadCSV("LoginCredits", CurrentModule, CurrentScreen, "GameCredits");
+	ActivityDictionaryLoad();
+	OnlneGameDictionaryLoad();
 	ElementCreateInput("InputName", "text", "", "20");
 	ElementCreateInput("InputPassword", "password", "", "20");
 
@@ -101,9 +110,18 @@ function LoginRun() {
 
 // Make sure the slave collar is equipped or unequipped based on the owner
 function LoginValidCollar() {
- 	if ((InventoryGet(Player, "ItemNeck") != null) && (InventoryGet(Player, "ItemNeck").Asset.Name == "SlaveCollar") && (Player.Owner == "")) InventoryRemove(Player, "ItemNeck");
- 	if ((InventoryGet(Player, "ItemNeck") != null) && (InventoryGet(Player, "ItemNeck").Asset.Name != "SlaveCollar") && (InventoryGet(Player, "ItemNeck").Asset.Name != "ClubSlaveCollar") && (Player.Owner != "")) InventoryRemove(Player, "ItemNeck");
-	if ((InventoryGet(Player, "ItemNeck") == null) && (Player.Owner != "")) InventoryWear(Player, "SlaveCollar", "ItemNeck");
+ 	if ((InventoryGet(Player, "ItemNeck") != null) && (InventoryGet(Player, "ItemNeck").Asset.Name == "SlaveCollar") && (Player.Owner == "")) {
+ 		InventoryRemove(Player, "ItemNeck");
+		InventoryRemove(Player, "ItemNeckAccessories");
+		InventoryRemove(Player, "ItemNeckRestraints");
+	}
+ 	if ((InventoryGet(Player, "ItemNeck") != null) && (InventoryGet(Player, "ItemNeck").Asset.Name != "SlaveCollar") && (InventoryGet(Player, "ItemNeck").Asset.Name != "ClubSlaveCollar") && (Player.Owner != "")) {
+ 		InventoryRemove(Player, "ItemNeck");
+	}
+	if ((InventoryGet(Player, "ItemNeck") == null) && (Player.Owner != "")) {
+		InventoryWear(Player, "SlaveCollar", "ItemNeck");
+		if (CurrentScreen == "ChatRoom") ChatRoomCharacterUpdate(Player);
+	}
 }
 
 // Only players that are club Mistresses can have the Mistress Padlock & Key
@@ -146,6 +164,22 @@ function LoginStableItems() {
 	ServerPlayerInventorySync();
 }
 
+// Make sure a player without lover is not wearing any lovers exclusive items
+function LoginLoversItems() {
+	if (Player.Lovership == null) {
+		for(var A = 0; A < Player.Appearance.length; A++) {
+			if (Player.Appearance[A].Asset.Group.Name == "ItemNeck" && Player.Appearance[A].Property && Player.Appearance[A].Asset.Name == "SlaveCollar" && Player.Appearance[A].Property.Type == "LoveLeatherCollar") {
+				Player.Appearance[A].Property = null;
+				Player.Appearance[A].Color = "Default";
+			}
+			if (Player.Appearance[A].Property && Player.Appearance[A].Property.LockedBy && ((Player.Appearance[A].Property.LockedBy == "LoversPadlock") || (Player.Appearance[A].Property.LockedBy == "LoversTimerPadlock"))) {
+				InventoryRemove(Player, Player.Appearance[A].Asset.Group.Name);
+				A--;
+			}
+		}
+	}
+}
+
 // Checks every owned item to see if its buygroup contains an item the player does not have
 // This allows the user to collect any items from a modified buy group already purchased
 function LoginValideBuyGroups() {
@@ -161,6 +195,25 @@ function LoginResponse(C) {
 
 	// If the return package contains a name and a account name
 	if (typeof C === "object") {
+
+		// In relog mode, we jump back to the previous screen, keeping the current game flow
+		if (RelogData != null) {
+			LoginMessage = "";
+			ElementRemove("InputPassword");
+			Player.OnlineID = C.ID.toString();
+			CurrentModule = RelogData.Module;
+			CurrentScreen = RelogData.Screen;
+			CurrentCharacter = RelogData.Character;
+			TextLoad();
+			if ((ChatRoomData != null) && (ChatRoomData.Name != null) && (ChatRoomData.Name != "") && (RelogChatLog != null)) {
+				CommonSetScreen("Online", "ChatSearch");
+				ChatRoomPlayerCanJoin = true;
+				ServerSend("ChatRoomJoin", { Name: ChatRoomData.Name });
+			}
+			return;
+		}
+
+		// In regular mode, we set the account properties for a new club session
 		if ((C.Name != null) && (C.AccountName != null)) {
 
 			// Make sure we have values
@@ -176,12 +229,15 @@ function LoginResponse(C) {
 			if (CommonIsNumeric(C.Money)) Player.Money = C.Money;
 			Player.Owner = ((C.Owner == null) || (C.Owner == "undefined")) ? "" : C.Owner;
 			Player.Lover = ((C.Lover == null) || (C.Lover == "undefined")) ? "" : C.Lover;
+			Player.Game = C.Game;
 			Player.Description = C.Description;
 			Player.Creation = C.Creation;
-			Player.Wardrobe = C.Wardrobe;
+			Player.Wardrobe = CharacterDecompressWardrobe(C.Wardrobe);
+			WardrobeFixLength();
 			Player.OnlineID = C.ID.toString();
 			Player.MemberNumber = C.MemberNumber;
-			Player.BlockItems = ((C.BlockItems == null) || !Array.isArray(C.BlockItems)) ? [] : C.BlockItems;
+			Player.BlockItems = ((C.BlockItems == null) || !Array.isArray(C.BlockItems)) ? [] : C.BlockItems;;
+			Player.LimitedItems = ((C.LimitedItems == null) || !Array.isArray(C.LimitedItems)) ? [] : C.LimitedItems;
 			Player.WardrobeCharacterNames = C.WardrobeCharacterNames;
 			WardrobeCharacter = [];
 
@@ -190,6 +246,11 @@ function LoginResponse(C) {
 			if ((Player.Ownership != null) && (Player.Ownership.Name != null))
 				Player.Owner = (Player.Ownership.Stage == 1) ? Player.Ownership.Name : "";
 
+			// Loads the lovership data
+			Player.Lovership = Array.isArray(C.Lovership) ? C.Lovership.length > 0 ? C.Lovership[0] : null : C.Lovership;
+			if ((Player.Lovership != null) && (Player.Lovership.Name != null))
+				Player.Lover = Player.Lovership.Name;
+
 			// Gets the online preferences
 			Player.LabelColor = C.LabelColor;
 			Player.ItemPermission = C.ItemPermission;
@@ -197,9 +258,11 @@ function LoginResponse(C) {
 			Player.VisualSettings = C.VisualSettings;
 			Player.AudioSettings = C.AudioSettings;
 			Player.GameplaySettings = C.GameplaySettings;
-			Player.WhiteList = C.WhiteList;
-			Player.BlackList = C.BlackList;
-			Player.FriendList = C.FriendList;
+			Player.ArousalSettings = C.ArousalSettings;
+			Player.WhiteList = ((C.WhiteList == null) || !Array.isArray(C.WhiteList)) ? [] : C.WhiteList;
+			Player.BlackList = ((C.BlackList == null) || !Array.isArray(C.BlackList)) ? [] : C.BlackList;
+			Player.FriendList = ((C.FriendList == null) || !Array.isArray(C.FriendList)) ? [] : C.FriendList;
+			Player.GhostList = ((C.GhostList == null) || !Array.isArray(C.GhostList)) ? [] : C.GhostList;
 
 			// Loads the player character model and data
 			Player.Appearance = ServerAppearanceLoadFromBundle(Player, C.AssetFamily, C.Appearance);
@@ -207,6 +270,13 @@ function LoginResponse(C) {
 			LogLoad(C.Log);
 			ReputationLoad(C.Reputation);
 			SkillLoad(C.Skill);
+
+			// Calls the preference init to make sure the preferences are loaded correctly
+			PreferenceInit(Player);
+			ActivitySetArousal(Player, 0);
+			ActivityTimerProgress(Player, 0);
+
+			// Loads the dialog and removes the login controls
 			CharacterLoadCSVDialog(Player);
 			PrivateCharacterMax = 4 + (LogQuery("Expansion", "PrivateRoom") ? 4 : 0) + (LogQuery("SecondExpansion", "PrivateRoom") ? 4 : 0);
 			CharacterRefresh(Player, false);
@@ -229,7 +299,9 @@ function LoginResponse(C) {
 			LoginValidCollar();
 			LoginMistressItems();
 			LoginStableItems();
+			LoginLoversItems();
 			LoginValideBuyGroups();
+			ServerPlayerSync();
 			CharacterAppearanceValidate(Player);
 
 			// If the player must log back in the cell
@@ -311,9 +383,7 @@ function LoginClick() {
 
 // When the user press "enter" we try to login
 function LoginKeyDown() {
-	if (KeyPress == 13) {
-		LoginDoLogin();
-	}
+	if (KeyPress == 13) LoginDoLogin();
 }
 
 // If we must try to login (make sure we don't send the login query twice)
@@ -325,8 +395,6 @@ function LoginDoLogin() {
 		if (Name.match(letters) && Password.match(letters) && (Name.length > 0) && (Name.length <= 20) && (Password.length > 0) && (Password.length <= 20)) {
 			LoginMessage = TextGet("ValidatingNamePassword");
 			ServerSend("AccountLogin", { AccountName: Name, Password: Password });
-		} else {
-			LoginMessage = TextGet("InvalidNamePassword");
-		}
+		} else LoginMessage = TextGet("InvalidNamePassword");
 	}
 }

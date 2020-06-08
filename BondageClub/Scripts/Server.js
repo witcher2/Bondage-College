@@ -1,6 +1,7 @@
 "use strict";
 var ServerSocket = null;
 var ServerURL = "http://localhost:4288";
+var ServerRelog = null;
 var ServerBeep = {};
 var ServerBeepAudio = new Audio();
 
@@ -18,12 +19,19 @@ function ServerInit() {
 	ServerSocket.on("ChatRoomCreateResponse", function (data) { ChatCreateResponse(data); });
 	ServerSocket.on("ChatRoomUpdateResponse", function (data) { ChatAdminResponse(data); });
 	ServerSocket.on("ChatRoomSync", function (data) { ChatRoomSync(data); });
+	ServerSocket.on("ChatRoomSyncSingle", function (data) { ChatRoomSyncSingle(data); });
+	ServerSocket.on("ChatRoomSyncExpression", function (data) { ChatRoomSyncExpression(data); });
+	ServerSocket.on("ChatRoomSyncPose", function (data) { ChatRoomSyncPose(data); });
+	ServerSocket.on("ChatRoomSyncArousal", function (data) { ChatRoomSyncArousal(data); });
+	ServerSocket.on("ChatRoomSyncItem", function (data) { ChatRoomSyncItem(data); });
 	ServerSocket.on("ChatRoomMessage", function (data) { ChatRoomMessage(data); });
 	ServerSocket.on("ChatRoomAllowItem", function (data) { ChatRoomAllowItem(data); });
+	ServerSocket.on("ChatRoomGameResponse", function (data) { ChatRoomGameResponse(data); });
 	ServerSocket.on("PasswordResetResponse", function (data) { PasswordResetResponse(data); });
 	ServerSocket.on("AccountQueryResult", function (data) { ServerAccountQueryResult(data); });
 	ServerSocket.on("AccountBeep", function (data) { ServerAccountBeep(data); });
 	ServerSocket.on("AccountOwnership", function (data) { ServerAccountOwnership(data); });
+	ServerSocket.on("AccountLovership", function(data) { ServerAccountLovership(data); });
 	ServerBeepAudio.src = "Audio/BeepAlarm.mp3";
 }
 
@@ -33,9 +41,40 @@ function ServerInfo(data) {
 	if (data.Time != null) CurrentTime = data.Time;
 }
 
-// When the server disconnects, we go back to the login screen
+// When the server disconnects, we enter in "Reconnect Mode"
 function ServerDisconnect(data) {
-	if (Player.Name != "") window.location = window.location;
+	if (Player.Name != "") {
+		if (CurrentScreen != "Relog") {
+
+			// Exits out of the chat room or a sub screen of the chatroom, so we'll be able to get in again when we log back
+			if (
+				(CurrentScreen == "ChatRoom")
+				|| (CurrentScreen == "ChatAdmin")
+				|| (CurrentScreen == "GameLARP")
+				|| ((CurrentScreen == "Appearance") && (CharacterAppearanceReturnRoom == "ChatRoom"))
+				|| ((CurrentScreen == "InformationSheet") && (InformationSheetPreviousScreen == "ChatRoom"))
+				|| ((CurrentScreen == "Title") && (InformationSheetPreviousScreen == "ChatRoom"))
+				|| ((CurrentScreen == "OnlineProfile") && (InformationSheetPreviousScreen == "ChatRoom"))
+				|| ((CurrentScreen == "FriendList") && (InformationSheetPreviousScreen == "ChatRoom") && (FriendListReturn == null))
+				|| ((CurrentScreen == "Preference") && (InformationSheetPreviousScreen == "ChatRoom"))
+			) {
+				RelogChatLog = document.getElementById("TextAreaChatLog").cloneNode(true);
+				RelogChatLog.id = "RelogChatLog";
+				RelogChatLog.name = "RelogChatLog";
+				ElementRemove("InputChat");
+				ElementRemove("TextAreaChatLog");
+				CurrentScreen = "ChatSearch";
+				CurrentModule = "Online";
+				CurrentCharacter = null;
+			} else RelogChatLog = null;
+
+			// Keeps the relog data
+			RelogData = { Screen: CurrentScreen, Module: CurrentModule, Character: CurrentCharacter };
+			CurrentCharacter = null;
+			CommonSetScreen("Character", "Relog");
+
+		}
+	}
 	else if (CurrentScreen == "Login") LoginMessage = TextGet((data != null) ? data : "ErrorDisconnectedFromServer");
 }
 
@@ -49,14 +88,13 @@ function ServerPlayerSync() {
 	ServerSend("AccountUpdate", { Money: Player.Money, Owner: Player.Owner, Lover: Player.Lover });
 }
 
-// Syncs the full player inventory to the server
+// Syncs the full player inventory to the server, it's compressed as a stringify array using LZString
 function ServerPlayerInventorySync() {
-	var D = {};
-	D.Inventory = [];
+	var Inv = [];
 	for (var I = 0; I < Player.Inventory.length; I++)
 		if (Player.Inventory[I].Asset != null)
-			D.Inventory.push({ Name: Player.Inventory[I].Asset.Name, Group: Player.Inventory[I].Asset.Group.Name });
-	ServerSend("AccountUpdate", D);
+			Inv.push([ Player.Inventory[I].Asset.Name, Player.Inventory[I].Asset.Group.Name ]);
+	ServerSend("AccountUpdate", { Inventory: LZString.compressToUTF16(JSON.stringify(Inv)) });
 }
 
 // Syncs the full player log to the server
@@ -110,6 +148,7 @@ function ServerValidateProperties(C, Item) {
 			if ((Effect == "Lock") && ((Item.Asset.AllowLock == null) || (Item.Asset.AllowLock == false) || (InventoryGetLock(Item) == null))) {
 				delete Item.Property.LockedBy;
 				delete Item.Property.LockMemberNumber;
+				delete Item.Property.CombinationNumber;
 				delete Item.Property.RemoveTimer;
 				delete Item.Property.MaxTimer;
 				delete Item.Property.RemoveItem;
@@ -123,13 +162,21 @@ function ServerValidateProperties(C, Item) {
 			// If the item is locked by a lock
 			if ((Effect == "Lock") && (InventoryGetLock(Item) != null)) {
 
-				// Make sure the remove timer on the lock is valid
+				// Make sure the combination number on the lock is valid, 4 digits only
 				var Lock = InventoryGetLock(Item);
+				if ((Item.Property.CombinationNumber != null) && (typeof Item.Property.CombinationNumber == "string")) {
+					var E = /^[0-9]+$/;
+					if (!Item.Property.CombinationNumber.match(E) || (Item.Property.CombinationNumber.length != 4)) {
+						Item.Property.CombinationNumber = "0000";
+					}
+				} else delete Item.Property.CombinationNumber;
+
+				// Make sure the remove timer on the lock is valid
 				if ((Lock.Asset.RemoveTimer != null) && (Lock.Asset.RemoveTimer != 0)) {
 					var CurrentTimeDelay = 5000;
 					// As CurrentTime can be slightly different, we accept a small delay in ms
 					if ((typeof Item.Property.RemoveTimer !== "number") || (Item.Property.RemoveTimer - CurrentTimeDelay > CurrentTime + Lock.Asset.MaxTimer * 1000)) {
-						Item.Property.RemoveTimer = CurrentTime + Lock.Asset.RemoveTimer * 1000;
+						Item.Property.RemoveTimer = Math.round(CurrentTime + Lock.Asset.RemoveTimer * 1000);
 					}
 				} else delete Item.Property.RemoveTimer;
 
@@ -137,6 +184,22 @@ function ServerValidateProperties(C, Item) {
 				if (Lock.Asset.OwnerOnly && ((C.Ownership == null) || (C.Ownership.MemberNumber == null) || (Item.Property.LockMemberNumber == null) || (C.Ownership.MemberNumber != Item.Property.LockMemberNumber))) {
 					delete Item.Property.LockedBy;
 					delete Item.Property.LockMemberNumber;
+					delete Item.Property.CombinationNumber;
+					delete Item.Property.RemoveTimer;
+					delete Item.Property.MaxTimer;
+					delete Item.Property.RemoveItem;
+					delete Item.Property.ShowTimer;
+					delete Item.Property.EnableRandomInput;
+					delete Item.Property.MemberNumberList;
+					Item.Property.Effect.splice(E, 1);
+					E--;
+				}
+
+				// Make sure the lover lock is valid
+				if (Lock.Asset.LoverOnly && ((C.Lovership == null) || (C.Lovership.MemberNumber == null) || (Item.Property.LockMemberNumber == null) || (C.Lovership.MemberNumber != Item.Property.LockMemberNumber))) {
+					delete Item.Property.LockedBy;
+					delete Item.Property.LockMemberNumber;
+					delete Item.Property.CombinationNumber;
 					delete Item.Property.RemoveTimer;
 					delete Item.Property.MaxTimer;
 					delete Item.Property.RemoveItem;
@@ -193,6 +256,9 @@ function ServerValidateProperties(C, Item) {
 		if ((Item.Asset.AllowType == null) || (Item.Asset.AllowType.indexOf(Item.Property.Type) < 0))
 			delete Item.Property.Type;
 
+	// Remove impossible combinations
+	if ((Item.Property != null) && (Item.Property.Type == null) && (Item.Property.Restrain == null))
+		["SetPose", "Difficulty", "SelfUnlock", "Hide"].forEach(P => delete Item.Property[P]);
 }
 
 // Loads the appearance assets from a server bundle that only contains the main info (no assets)
@@ -211,41 +277,72 @@ function ServerAppearanceLoadFromBundle(C, AssetFamily, Bundle, SourceMemberNumb
 	// Reapply any item that was equipped and isn't enable, same for owner locked items if the source member isn't the owner
 	if ((SourceMemberNumber != null) && (C.ID == 0))
 		for (var A = 0; A < C.Appearance.length; A++) {
-			if (!C.Appearance[A].Asset.Enable && !C.Appearance[A].Asset.OwnerOnly)
+			if (!C.Appearance[A].Asset.Enable && !C.Appearance[A].Asset.OwnerOnly && !C.Appearance[A].Asset.LoverOnly) {
 				Appearance.push(C.Appearance[A]);
-			else
+			} else {
 				if ((C.Ownership != null) && (C.Ownership.MemberNumber != null) && (C.Ownership.MemberNumber != SourceMemberNumber) && InventoryOwnerOnlyItem(C.Appearance[A])) {
 					var NA = C.Appearance[A];
 					if (!C.Appearance[A].Asset.OwnerOnly) {
+
 						// If the owner-locked item is sent back from a non-owner, we allow to change some properties and lock it back with the owner lock
 						for (var B = 0; B < Bundle.length; B++)
 							if ((C.Appearance[A].Asset.Name == Bundle[B].Name) && (C.Appearance[A].Asset.Group.Name == Bundle[B].Group) && (C.Appearance[A].Asset.Group.Family == AssetFamily))
 								NA.Property = Bundle[B].Property;
+
 						// Some Properties should not be changed
 						if (C.Appearance[A].Property) {
 							if (C.Appearance[A].Property.LockedBy != null) NA.Property.LockedBy = C.Appearance[A].Property.LockedBy;
 							if (C.Appearance[A].Property.LockMemberNumber != null) NA.Property.LockMemberNumber = C.Appearance[A].Property.LockMemberNumber; else delete NA.Property.LockMemberNumber;
+							if (C.Appearance[A].Property.CombinationNumber != null) NA.Property.CombinationNumber = C.Appearance[A].Property.CombinationNumber; else delete NA.Property.CombinationNumber;
 							if (C.Appearance[A].Property.RemoveItem != null) NA.Property.RemoveItem = C.Appearance[A].Property.RemoveItem; else delete NA.Property.RemoveItem;
 							if (C.Appearance[A].Property.ShowTimer != null) NA.Property.ShowTimer = C.Appearance[A].Property.ShowTimer; else delete NA.Property.ShowTimer;
 							if (C.Appearance[A].Property.EnableRandomInput != null) NA.Property.EnableRandomInput = C.Appearance[A].Property.EnableRandomInput; else delete NA.Property.EnableRandomInput;
-
 							if (!NA.Property.EnableRandomInput || NA.Property.LockedBy != "OwnerTimerPadlock") {
 								if (C.Appearance[A].Property.MemberNumberList != null) NA.Property.MemberNumberList = C.Appearance[A].Property.MemberNumberList; else delete NA.Property.MemberNumberList;
-								if (C.Appearance[A].Property.RemoveTimer != null) NA.Property.RemoveTimer = C.Appearance[A].Property.RemoveTimer; else delete NA.Property.RemoveTimer;
+								if (C.Appearance[A].Property.RemoveTimer != null) NA.Property.RemoveTimer = Math.round(C.Appearance[A].Property.RemoveTimer); else delete NA.Property.RemoveTimer;
 							}
 						}
 						ServerValidateProperties(C, NA);
 						if (C.Appearance[A].Property.LockedBy == "OwnerPadlock") InventoryLock(C, NA, { Asset: AssetGet(AssetFamily, "ItemMisc", "OwnerPadlock") }, C.Ownership.MemberNumber);
+
 					}
 					Appearance.push(NA);
 				}
+				if ((C.Lovership != null) && (C.Lovership.MemberNumber != null) && (C.Lovership.MemberNumber != SourceMemberNumber) && InventoryLoverOnlyItem(C.Appearance[A])) {
+					var NA = C.Appearance[A];
+					if (!C.Appearance[A].Asset.LoverOnly) {
+
+						// If the lover-locked item is sent back from a non-lover, we allow to change some properties and lock it back with the lover lock
+						for (var B = 0; B < Bundle.length; B++)
+							if ((C.Appearance[A].Asset.Name == Bundle[B].Name) && (C.Appearance[A].Asset.Group.Name == Bundle[B].Group) && (C.Appearance[A].Asset.Group.Family == AssetFamily))
+								NA.Property = Bundle[B].Property;
+
+						// Some Properties should not be changed
+						if (C.Appearance[A].Property) {
+							if (C.Appearance[A].Property.LockedBy != null) NA.Property.LockedBy = C.Appearance[A].Property.LockedBy;
+							if (C.Appearance[A].Property.LockMemberNumber != null) NA.Property.LockMemberNumber = C.Appearance[A].Property.LockMemberNumber; else delete NA.Property.LockMemberNumber;
+							if (C.Appearance[A].Property.CombinationNumber != null) NA.Property.CombinationNumber = C.Appearance[A].Property.CombinationNumber; else delete NA.Property.CombinationNumber;
+							if (C.Appearance[A].Property.RemoveItem != null) NA.Property.RemoveItem = C.Appearance[A].Property.RemoveItem; else delete NA.Property.RemoveItem;
+							if (C.Appearance[A].Property.ShowTimer != null) NA.Property.ShowTimer = C.Appearance[A].Property.ShowTimer; else delete NA.Property.ShowTimer;
+							if (C.Appearance[A].Property.EnableRandomInput != null) NA.Property.EnableRandomInput = C.Appearance[A].Property.EnableRandomInput; else delete NA.Property.EnableRandomInput;
+							if (!NA.Property.EnableRandomInput || NA.Property.LockedBy != "LoversTimerPadlock") {
+								if (C.Appearance[A].Property.MemberNumberList != null) NA.Property.MemberNumberList = C.Appearance[A].Property.MemberNumberList; else delete NA.Property.MemberNumberList;
+								if (C.Appearance[A].Property.RemoveTimer != null) NA.Property.RemoveTimer = Math.round(C.Appearance[A].Property.RemoveTimer); else delete NA.Property.RemoveTimer;
+							}
+						}
+						ServerValidateProperties(C, NA);
+						if (C.Appearance[A].Property.LockedBy == "LoversPadlock") InventoryLock(C, NA, { Asset: AssetGet(AssetFamily, "ItemMisc", "LoversPadlock") }, C.Lovership.MemberNumber);
+					}
+					Appearance.push(NA);
+				}
+			}
 		}
 
 	// For each appearance item to load
 	for (var A = 0; A < Bundle.length; A++) {
 
 		// Skip blocked items
-		if (Array.isArray(C.BlockItems) && C.BlockItems.some(B => B.Name == Bundle[A].Name && B.Group == Bundle[A].Group)) continue;
+		if ((InventoryIsPermissionBlocked(C, Bundle[A].Name, Bundle[A].Group) || InventoryIsPermissionLimited(C,Bundle[A].Name, Bundle)) && OnlineGameAllowBlockItems()) continue;
 
 		// Cycles in all assets to find the correct item to add (do not add )
 		for (var I = 0; I < Asset.length; I++)
@@ -254,6 +351,11 @@ function ServerAppearanceLoadFromBundle(C, AssetFamily, Bundle, SourceMemberNumb
 				// OwnerOnly items can only get update if it comes from owner
 				if (Asset[I].OwnerOnly && (C.ID == 0)) {
 					if ((C.Ownership == null) || (C.Ownership.MemberNumber == null) || ((C.Ownership.MemberNumber != SourceMemberNumber) && (SourceMemberNumber != null))) break;
+				}
+
+				// LoverOnly items can only get update if it comes from lover
+				if (Asset[I].LoverOnly && (C.ID == 0)) {
+					if ((C.Lovership == null) || (C.Lovership.MemberNumber == null) || ((C.Lovership.MemberNumber != SourceMemberNumber) && (SourceMemberNumber != null))) break;
 				}
 
 				// Creates the item and colorize it
@@ -275,6 +377,10 @@ function ServerAppearanceLoadFromBundle(C, AssetFamily, Bundle, SourceMemberNumb
 						var Lock = InventoryGetLock(NA);
 						if ((Lock != null) && (Lock.Property != null)) delete Item.Property.LockMemberNumber;
 					}
+					if ((SourceMemberNumber != null) && (C.ID == 0) && (C.Lovership != null) && (C.Lovership.MemberNumber != null) && (C.Lovership.MemberNumber != SourceMemberNumber) && InventoryLoverOnlyItem(NA)) {
+						var Lock = InventoryGetLock(NA);
+						if ((Lock != null) && (Lock.Property != null)) delete Item.Property.LockMemberNumber;
+					}
 					ServerValidateProperties(C, NA);
 				}
 
@@ -287,7 +393,7 @@ function ServerAppearanceLoadFromBundle(C, AssetFamily, Bundle, SourceMemberNumb
 					}
 
 				// Make sure we don't push an item that's disabled, coming from another player
-				if (CanPush && !NA.Asset.Enable && !NA.Asset.OwnerOnly && (SourceMemberNumber != null) && (C.ID == 0)) CanPush = false;
+				if (CanPush && !NA.Asset.Enable && !NA.Asset.OwnerOnly && !NA.Asset.LoverOnly && (SourceMemberNumber != null) && (C.ID == 0)) CanPush = false;
 				if (CanPush) Appearance.push(NA);
 				break;
 
@@ -322,7 +428,7 @@ function ServerAppearanceLoadFromBundle(C, AssetFamily, Bundle, SourceMemberNumb
 function ServerPlayerAppearanceSync() {
 
 	// Creates a big parameter string of every appearance items and sends it to the server
-	if ((Player.AccountName != "") && (CurrentScreen != "Photographic")) {
+	if (Player.AccountName != "") {
 		var D = {};
 		D.AssetFamily = Player.AssetFamily;
 		D.Appearance = ServerAppearanceBundle(Player.Appearance);
@@ -348,6 +454,7 @@ function ServerPrivateCharacterSync() {
 				AssetFamily: PrivateCharacter[ID].AssetFamily,
 				Appearance: ServerAppearanceBundle(PrivateCharacter[ID].Appearance),
 				AppearanceFull: ServerAppearanceBundle(PrivateCharacter[ID].AppearanceFull),
+				ArousalSettings: PrivateCharacter[ID].ArousalSettings,
 				Event: PrivateCharacter[ID].Event
 			};
 			D.PrivateCharacter.push(C);
@@ -360,6 +467,8 @@ function ServerPrivateCharacterSync() {
 function ServerAccountQueryResult(data) {
 	if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.Query != null) && (typeof data.Query === "string") && (data.Result != null)) {
 		if (data.Query == "OnlineFriends") FriendListLoadFriendList(data.Result);
+		if (data.Query == "EmailStatus") document.getElementById(data.Result ? "InputEmailOld" : "InputEmailNew").placeholder = TextGet(data.Result ? "UpdateEmailLinked" : "UpdateEmailEmpty");
+		if (data.Query == "EmailUpdate") ElementValue("InputEmailNew", TextGet(data.Result ? "UpdateEmailSuccess" : "UpdateEmailFailure"));
 	}
 }
 
@@ -407,6 +516,42 @@ function ServerAccountOwnership(data) {
 		Player.Owner = "";
 		Player.Ownership = null;
 		LoginValidCollar();
+	}
+
+}
+
+// Gets the account lovership result from the query sent to the server
+function ServerAccountLovership(data) {
+
+	// If we get a result for a specific member number, we show that option in the online dialog
+	if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.MemberNumber != null) && (typeof data.MemberNumber === "number") && (data.Result != null) && (typeof data.Result === "string"))
+		if ((CurrentCharacter != null) && (CurrentCharacter.MemberNumber == data.MemberNumber))
+			ChatRoomLovershipOption = data.Result;
+
+	// If we must update the character lovership data as an array
+	if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.Lovership != null) && (Array.isArray(data.Lovership))) {
+		if (data.Lovership.length > 0) {
+			Player.Lovership = data.Lovership[0];
+		}
+		else {
+			Player.Lover = "";
+			Player.Lovership = null;
+		}
+		LoginLoversItems();
+	}
+	else {
+		// If we must update the character lovership data
+		if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.Lover != null) && (typeof data.Lover === "string") && (data.Lovership != null) && (typeof data.Lovership === "object")) {
+			Player.Lover = data.Lover;
+			Player.Lovership = data.Lovership;
+		}
+
+		// If we must clear the character lovership data
+		if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.ClearLovership != null) && (typeof data.ClearLovership === "boolean") && (data.ClearLovership == true)) {
+			Player.Lover = "";
+			Player.Lovership = null;
+			LoginLoversItems();
+		}
 	}
 
 }

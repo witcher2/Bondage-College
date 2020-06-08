@@ -23,6 +23,8 @@ function AssetGroupAdd(NewAssetFamily, NewAsset) {
 		ParentColor: (NewAsset.ParentColor == null) ? "" : NewAsset.ParentColor,
 		Clothing: (NewAsset.Clothing == null) ? false : NewAsset.Clothing,
 		Underwear: (NewAsset.Underwear == null) ? false : NewAsset.Underwear,
+		BodyCosplay: (NewAsset.BodyCosplay == null) ? false : NewAsset.BodyCosplay,
+		Activity: NewAsset.Activity,
 		Zone: NewAsset.Zone,
 		SetPose: NewAsset.SetPose,
 		AllowPose: NewAsset.AllowPose,
@@ -48,6 +50,7 @@ function AssetAdd(NewAsset) {
 		Enable: (NewAsset.Enable == null) ? true : NewAsset.Enable,
 		Visible: (NewAsset.Visible == null) ? true : NewAsset.Visible,
 		Wear: (NewAsset.Wear == null) ? true : NewAsset.Wear,
+		Activity: NewAsset.Activity,
 		BuyGroup: NewAsset.BuyGroup,
 		PrerequisiteBuyGroups: NewAsset.PrerequisiteBuyGroups,
 		Effect: NewAsset.Effect,
@@ -61,7 +64,7 @@ function AssetAdd(NewAsset) {
 		AllowPose: NewAsset.AllowPose,
 		Value: (NewAsset.Value == null) ? 0 : NewAsset.Value,
 		Difficulty: (NewAsset.Difficulty == null) ? 0 : NewAsset.Difficulty,
-		SelfBondage: (NewAsset.SelfBondage == null) ? true : NewAsset.SelfBondage,
+		SelfBondage: (NewAsset.SelfBondage == null) ? 0 : NewAsset.SelfBondage,
 		SelfUnlock: (NewAsset.SelfUnlock == null) ? true : NewAsset.SelfUnlock,
 		Random: (NewAsset.Random == null) ? true : NewAsset.Random,
 		RemoveAtLogin: (NewAsset.RemoveAtLogin == null) ? false : NewAsset.RemoveAtLogin,
@@ -70,6 +73,8 @@ function AssetAdd(NewAsset) {
 		RemoveTimer: (NewAsset.RemoveTimer == null) ? 0 : NewAsset.RemoveTimer,
 		MaxTimer: (NewAsset.MaxTimer == null) ? 0 : NewAsset.MaxTimer,
 		DrawingPriority: NewAsset.Priority,
+		DrawingLeft: NewAsset.Left,
+		DrawingTop: NewAsset.Top,
 		HeightModifier: (NewAsset.Height == null) ? 0 : NewAsset.Height,
 		ZoomModifier: (NewAsset.Zoom == null) ? 1 : NewAsset.Zoom,
 		Alpha: NewAsset.Alpha,
@@ -78,6 +83,7 @@ function AssetAdd(NewAsset) {
 		AllowLock: (NewAsset.AllowLock == null) ? false : NewAsset.AllowLock,
 		IsLock: (NewAsset.IsLock == null) ? false : NewAsset.IsLock,
 		OwnerOnly: (NewAsset.OwnerOnly == null) ? false : NewAsset.OwnerOnly,
+		LoverOnly: (NewAsset.LoverOnly == null) ? false : NewAsset.LoverOnly,
 		ExpressionTrigger: NewAsset.ExpressionTrigger,
 		Layer: AssetBuildLayer(NewAsset.Layer),
 		RemoveItemOnRemove : (NewAsset.RemoveItemOnRemove == null) ? [] : NewAsset.RemoveItemOnRemove,
@@ -88,10 +94,14 @@ function AssetAdd(NewAsset) {
 		Audio: NewAsset.Audio,
 		IgnoreParentGroup: (NewAsset.IgnoreParentGroup == null) ? false : NewAsset.IgnoreParentGroup,
 		IsRestraint: (NewAsset.IsRestraint == null) ? ((AssetCurrentGroup.IsRestraint == null) ? false : AssetCurrentGroup.IsRestraint) : NewAsset.IsRestraint,
+		BodyCosplay: NewAsset.BodyCosplay == null ? false : NewAsset.BodyCosplay,
 		DynamicDescription: (typeof NewAsset.DynamicDescription === 'function') ? NewAsset.DynamicDescription : function () { return this.Description },
-		DynamicPreviewIcon: (typeof NewAsset.DynamicDescription === 'function') ? NewAsset.DynamicPreviewIcon : function () { return "" },
+		DynamicPreviewIcon: (typeof NewAsset.DynamicPreviewIcon === 'function') ? NewAsset.DynamicPreviewIcon : function () { return "" },
 		DynamicAllowInventoryAdd: (typeof NewAsset.DynamicAllowInventoryAdd === 'function') ? NewAsset.DynamicAllowInventoryAdd : function () { return true },
-		DynamicExpressionTrigger: (typeof NewAsset.DynamicExpressionTrigger === 'function') ? NewAsset.DynamicExpressionTrigger : function () { return this.ExpressionTrigger } 
+		DynamicExpressionTrigger: (typeof NewAsset.DynamicExpressionTrigger === 'function') ? NewAsset.DynamicExpressionTrigger : function () { return this.ExpressionTrigger }, 
+		DynamicName: (typeof NewAsset.DynamicName === 'function') ? NewAsset.DynamicName : function () { return this.Name },
+		DynamicGroupName: (NewAsset.DynamicGroupName || AssetCurrentGroup.Name),
+		DynamicActivity: (typeof NewAsset.DynamicActivity === 'function') ? NewAsset.DynamicActivity : function () { return NewAsset.Activity }
 	}
 	// Unwearable assets are not visible but can be overwritten
 	if (!A.Wear && NewAsset.Visible != true) A.Visible = false;
@@ -207,5 +217,14 @@ function AssetGet(Family, Group, Name) {
 	for (var A = 0; A < Asset.length; A++)
 		if ((Asset[A].Name == Name) && (Asset[A].Group.Name == Group) && (Asset[A].Group.Family == Family))
 			return Asset[A];
+	return null;
+}
+
+// Gets an activity asset by family and name
+function AssetGetActivity(Family, Name) {
+	if (Family == "Female3DCG")
+		for (var A = 0; A < ActivityFemale3DCG.length; A++)
+			if (ActivityFemale3DCG[A].Name == Name)
+				return ActivityFemale3DCG[A];
 	return null;
 }
